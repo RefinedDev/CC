@@ -8,10 +8,10 @@
 
   const PUBLIC_PAGES = new Set(['', 'index.html', 'login.html', 'signup.html']);
   const PROTECTED_PAGES = new Set([
-    'trainee-dashboard.html','trainer-dashboard.html','admin-dashboard.html',
-    'course-catalog.html','assessment-instructions.html','assessment.html',
-    'assessment-result.html','performance.html','library.html','certificate.html',
-    'feedback.html','notifications.html','profile.html','settings.html',
+    'trainee-dashboard.html', 'trainer-dashboard.html', 'admin-dashboard.html',
+    'course-catalog.html', 'assessment-instructions.html', 'assessment.html',
+    'assessment-result.html', 'performance.html', 'library.html', 'certificate.html',
+    'feedback.html', 'notifications.html', 'profile.html', 'settings.html',
     'trainer-questionnaire.html'
   ]);
 
@@ -26,7 +26,7 @@
 
   function saveUser(user) { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
   function clearAssessmentState() {
-    ['thing_q','thing_answers','thing_assessment_end'].forEach(k => localStorage.removeItem(k));
+    ['thing_q', 'thing_answers', 'thing_assessment_end'].forEach(k => localStorage.removeItem(k));
   }
   function currentPage() {
     const path = location.pathname.split('/').pop();
