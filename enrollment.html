@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Enroll | The Thing</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.enroll-wrap{max-width:760px;margin:30px auto}.enroll-card{padding:30px}.enroll-course{display:flex;gap:18px;align-items:center;padding:18px;border:1px solid var(--border);border-radius:18px;background:var(--surface-2);margin:20px 0}.enroll-icon{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-size:30px;background:linear-gradient(135deg,#2764f5,#7b4fe9)}.enroll-form{display:grid;gap:16px}.enroll-form label{display:grid;gap:7px;font-weight:700}.enroll-form input{width:100%;box-sizing:border-box}.success{display:none;text-align:center;padding:28px}.success .check{font-size:56px}.success .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+</style></head>
+<body data-auth="true" data-role="Trainee">
+<aside class="sidebar"><a class="brand" href="trainee-dashboard.html"><img class="logo" src="assets/logo.svg" alt="The Thing logo"><span>The Thing</span></a><div class="side-links">
+<a href="trainee-dashboard.html">⌂ <span>Dashboard</span></a><a href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓ <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆 <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎ <span>Profile</span></a><a href="settings.html">⚙ <span>Settings</span></a><a href="index.html" data-logout>↪ <span>Logout</span></a>
+</div></aside>
+<div class="app"><header class="dashboard-top"><button class="menu-btn" data-menu>☰</button><div class="search">⌕ <input placeholder="Search courses, resources..."></div><button class="theme-mini" onclick="toggleTheme(localStorage.getItem('thing_theme')!=='dark')">☾</button><div class="top-user">🔔 <span data-user-name>User</span><small data-user-role>Trainee</small><div class="avatar" data-user-avatar>U</div></div></header>
+<main class="content"><div class="enroll-wrap"><div id="enrollCard" class="panel enroll-card"><span class="eyebrow">COURSE ENROLLMENT</span><h1>Enroll in a course</h1><p>Enter your login details below to confirm your enrollment.</p><div class="enroll-course"><div class="enroll-icon" id="courseIcon">💻</div><div><span class="tag" id="courseCategory">COURSE</span><h2 id="courseTitle">Course</h2><p id="courseDescription">Course description</p></div></div><form id="enrollForm" class="enroll-form"><label>Full Name<input id="enrollName" required placeholder="Enter your name"></label><label>Email<input id="enrollEmail" type="email" required placeholder="you@example.com"></label><label>Password<input id="enrollPassword" type="password" minlength="4" required placeholder="Enter your password"></label><label style="display:flex;align-items:center;gap:9px;font-weight:500"><input id="enrollAgree" type="checkbox" required style="width:auto"> I confirm that I want to enroll in this course.</label><button class="btn btn-primary full" type="submit">Confirm Enrollment</button></form></div>
+<div id="success" class="panel success"><div class="check">🎉</div><h2>Enrollment successful!</h2><p>You are now enrolled in <strong id="successCourse">this course</strong>.</p><p>Your learning progress starts at <strong>0%</strong>. It will increase only as you complete lectures.</p><div class="actions"><a class="btn btn-primary" id="startLearning" href="lectures.html">Start Learning</a><a class="btn btn-ghost" href="course-catalog.html">Back to Courses</a></div></div></div></main></div>
+<script src="js/auth.js"></script><script src="js/app.js"></script><script>
+(function(){
+ const courses={
+  web:{title:'Web Development Basics',category:'WEB DEVELOPMENT',description:'HTML, CSS and JavaScript fundamentals.',icon:'💻',lessons:16},
+  python:{title:'Python Programming',category:'PROGRAMMING',description:'Build a strong foundation in Python.',icon:'🐍',lessons:20},
+  cpp:{title:'Data Structures in C++',category:'COMPUTER SCIENCE',description:'Arrays, stacks, queues, trees and graphs.',icon:'🧩',lessons:24},
+  uiux:{title:'UI/UX Design Principles',category:'DESIGN',description:'Learn practical interface design.',icon:'🎨',lessons:12}
+ };
+ const params=new URLSearchParams(location.search); const id=params.get('course')||'web'; const c=courses[id]||courses.web;
+ document.getElementById('courseIcon').textContent=c.icon; document.getElementById('courseCategory').textContent=c.category; document.getElementById('courseTitle').textContent=c.title; document.getElementById('courseDescription').textContent=c.description;
+ document.getElementById('successCourse').textContent=c.title; document.getElementById('startLearning').href='lectures.html?course='+encodeURIComponent(id);
+ const u=getUser(); if(u){document.getElementById('enrollName').value=u.name||'';document.getElementById('enrollEmail').value=u.email||'';}
+ document.getElementById('enrollForm').addEventListener('submit',function(e){e.preventDefault();
+   const name=document.getElementById('enrollName').value.trim(),email=document.getElementById('enrollEmail').value.trim();
+   const enrollments=JSON.parse(localStorage.getItem('thing_enrollments')||'{}');
+   if(!enrollments[id]) enrollments[id]={courseId:id,title:c.title,name,email,enrolledAt:new Date().toISOString(),progress:0,started:false,completedLectures:[]};
+   else {enrollments[id].name=name;enrollments[id].email=email;}
+   localStorage.setItem('thing_enrollments',JSON.stringify(enrollments));
+   const user=getUser(); if(user){user.email=email;saveUser(user);}
+   document.getElementById('enrollCard').style.display='none'; document.getElementById('success').style.display='block';
+ });
+})();
+</script></body></html>
