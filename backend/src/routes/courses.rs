@@ -51,11 +51,19 @@ async fn list_courses(
         )
     })?;
 
-    let courses = COURSES.lock().unwrap();
-    let payload = courses
-        .values()
-        .cloned()
-        .collect::<Vec<CourseRecord>>();
+    let mut courses = COURSES.lock().unwrap();
+    if courses.len() == 0 {
+        courses.insert(
+            "1".to_string(),
+            CourseRecord {
+                id: "course_1".to_string(),
+                title: "Introduction to Rust".to_string(),
+                description: "Learn the basics of Rust programming language.".to_string(),
+                created_by: "admin".to_string(),
+            },
+        );
+    }
+    let payload = courses.values().cloned().collect::<Vec<CourseRecord>>();
 
     Ok((StatusCode::OK, Json(serde_json::json!(payload))))
 }

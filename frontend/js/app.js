@@ -116,11 +116,45 @@
     document.getElementById('result-message').textContent = r.score / r.total >= .8 ? 'Excellent work! You passed the assessment.' : 'Keep practicing and try again to improve your score.';
   }
 
-  window.saveProfile = function () { const u = Auth.getUser(), name = document.getElementById('profile-name')?.value.trim(); if (u && name) { u.name = name; Auth.saveUser(u); setupShell(); showToast('Profile saved!'); } };
+  async function loadProfile() {
+    const profileName = document.getElementById('profile-name');
+    if (!profileName) return;
+    
+    try {
+      const profile = await window.CapacityApi.get('/users/me');
+
+      profileName.value = profile.name || '';
+      const profileEmail = document.getElementById('profile-email');
+      if (profileEmail) profileEmail.value = profile.email || '';
+      Auth.saveUser({ ...Auth.getUser(), ...profile });
+      setupShell();
+    } catch (error) {
+      showToast(error.message || 'Unable to load profile.');
+    }
+  }
+
+  window.saveProfile = async function () {
+    const name = document.getElementById('profile-name')?.value.trim();
+    const email = document.getElementById('profile-email')?.value.trim();
+    if (!name || !email) {
+      showToast('Name and email are required.');
+      return;
+    }
+
+    try {
+      const profile = await window.CapacityApi.put('/users/me', { name, email });
+
+      Auth.saveUser({ ...Auth.getUser(), ...profile });
+      setupShell();
+      showToast('Profile saved!');
+    } catch (error) {
+      showToast(error.message || 'Unable to save profile.');
+    }
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     // auth.js has already performed the access check synchronously.
     if (!Auth.getUser() && !new Set(['index.html', 'login.html', 'signup.html']).has(Auth.currentPage())) return;
-    setupShell(); initThemeButton(); initAssessment(); initCertificate(); initResult();
+    setupShell(); initThemeButton(); initAssessment(); initCertificate(); initResult(); loadProfile();
   });
 })();
