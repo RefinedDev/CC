@@ -1,4 +1,4 @@
-/* The Thing - single, deterministic authentication layer.
+/* Capacity Connect - single, deterministic authentication layer.
    IMPORTANT: this file is loaded BEFORE app.js. */
 (function () {
   'use strict';

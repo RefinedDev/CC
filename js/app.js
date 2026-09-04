@@ -1,4 +1,4 @@
-/* The Thing - application UI. Authentication is handled only by auth.js. */
+/* Capacity Connect - application UI. Authentication is handled only by auth.js. */
 (function () {
   'use strict';
   const Auth = window.ThingAuth;

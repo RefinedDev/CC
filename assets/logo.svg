@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 64" role="img" aria-label="The Thing bird logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 64" role="img" aria-label="Capacity Connect bird logo">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
   <path fill="url(#g)" d="M8 39c17-2 27-9 35-24 2-4 5-8 9-11-1 8 2 15 10 20 6 4 14 5 25 3-7 9-18 13-31 11-7-1-14-4-20-8-7 7-16 10-28 9z"/>
   <path fill="#60a5fa" d="M49 13c6 2 11 6 15 12-7-1-12-4-15-8z"/>

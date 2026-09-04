@@ -1,4 +1,4 @@
-# The Thing — Training Portal Frontend
+# Capacity Connect — Training Portal Frontend
 
 This version adds functional demo course enrollment and course-specific learning flows.
 
