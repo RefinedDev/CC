@@ -2,11 +2,13 @@ use axum::{Router, routing::get};
 use tower_http::cors::CorsLayer;
 
 mod routes;
+mod db;
 
 use routes::{admin, auth, courses, users};
 
 #[tokio::main]
 async fn main() {
+    db::init().expect("failed to initialize database");
     let app = Router::new()
         .nest("/api/auth", auth::router())
         .nest("/api/users", users::router())

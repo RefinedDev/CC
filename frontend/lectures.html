@@ -289,30 +289,16 @@
                 <div class="tip-icon">💡</div>
                 <div><strong>How course completion works</strong>
                     <p>Opening the course does not increase progress. Starting a lecture changes the course button to
-                        <strong>Continue Learning</strong>. Progress increases only when the lecture is completed.</p>
+                        <strong>Continue Learning</strong>. Progress increases only when the lecture is completed.
+                    </p>
                 </div>
             </div>
         </main>
     </div>
     <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        (function () {
-            const courses = { web: { title: 'Web Development Basics', category: 'WEB DEVELOPMENT', description: 'HTML, CSS and JavaScript fundamentals.', icon: '💻', lessons: ['Introduction to Web Development', 'HTML Document Structure', 'Links, Images and Media', 'HTML Forms and Input', 'CSS Fundamentals', 'Colors, Fonts and Text Styling', 'Box Model and Spacing', 'Flexbox Layout', 'CSS Grid Layout', 'Responsive Web Design', 'JavaScript Basics', 'JavaScript Conditions and Loops', 'Functions and Events', 'DOM Manipulation', 'Local Storage and Web APIs', 'Final Project and Web Development Review'] }, python: { title: 'Python Programming', category: 'PROGRAMMING', description: 'Build a strong foundation in Python.', icon: '🐍', lessons: Array.from({ length: 20 }, (_, i) => `Python Programming — Lesson ${i + 1}`) }, cpp: { title: 'Data Structures in C++', category: 'COMPUTER SCIENCE', description: 'Arrays, stacks, queues, trees and graphs.', icon: '🧩', lessons: Array.from({ length: 24 }, (_, i) => `Data Structures in C++ — Lesson ${i + 1}`) }, uiux: { title: 'UI/UX Design Principles', category: 'DESIGN', description: 'Learn practical interface design.', icon: '🎨', lessons: Array.from({ length: 12 }, (_, i) => `UI/UX Design Principles — Lesson ${i + 1}`) } };
-            const id = new URLSearchParams(location.search).get('course') || 'web'; const c = courses[id] || courses.web;
-            const key = 'thing_enrollments'; let all = JSON.parse(localStorage.getItem(key) || '{}'); let e = all[id];
-            if (!e) { e = { courseId: id, title: c.title, name: getUser()?.name || '', email: getUser()?.email || '', enrolledAt: new Date().toISOString(), progress: 0, started: false, completedLectures: [] }; all[id] = e; localStorage.setItem(key, JSON.stringify(all)); }
-            function save() { all[id] = e; localStorage.setItem(key, JSON.stringify(all)); }
-            function render() {
-                document.getElementById('courseTitle').textContent = c.title; document.getElementById('heroTitle').textContent = e.started ? 'Continue your learning journey' : 'Start your learning journey'; document.getElementById('heroDescription').textContent = c.description; document.getElementById('courseCategory').textContent = c.category; document.getElementById('courseIcon').textContent = c.icon;
-                const total = c.lessons.length, done = e.completedLectures.length, pct = Math.round(done / total * 100); e.progress = pct; save();
-                document.getElementById('progressPercent').textContent = pct + '%'; document.getElementById('progressCount').textContent = `${done} / ${total} completed`; document.getElementById('remainingCount').textContent = `${total - done} remaining`; document.getElementById('progressBar').style.width = pct + '%'; document.getElementById('totalLectures').textContent = total; document.getElementById('completedCount').textContent = done; document.getElementById('remainingStat').textContent = total - done; document.getElementById('lessonBadge').textContent = total + ' LESSONS';
-                const list = document.getElementById('lectureList'); list.innerHTML = c.lessons.map((title, i) => { const complete = e.completedLectures.includes(i), started = e.startedLectures?.includes(i) && !complete; return `<div class="lecture-item ${complete ? 'completed' : ''} ${started ? 'started' : ''}"><div class="lecture-number">${String(i + 1).padStart(2, '0')}</div><div class="lecture-icon">▶</div><div class="lecture-details">${i === e.completedLectures.length && !complete ? '<div class="next-label">NEXT UP</div>' : ''}<h3>${title}</h3><p>Lecture ${i + 1} • ${10 + (i % 6) * 3} min</p></div><span class="lecture-status ${complete ? 'completed' : 'pending'}">${complete ? '✓ Completed' : started ? '▶ In progress' : '○ Not completed'}</span><button class="btn ${complete ? 'btn-ghost' : 'btn-primary'} lecture-action" onclick="watchLecture(${i})">${complete ? 'Review' : started ? 'Continue' : 'Start'}</button></div>` }).join('');
-            }
-            window.watchLecture = function (i) { e.started = true; e.startedLectures = e.startedLectures || []; if (!e.startedLectures.includes(i)) e.startedLectures.push(i); save(); document.getElementById('watchBox').classList.add('active'); document.getElementById('watchTitle').textContent = c.lessons[i]; document.getElementById('completeBtn').onclick = () => { if (!e.completedLectures.includes(i)) e.completedLectures.push(i); e.started = true; save(); document.getElementById('watchBox').classList.remove('active'); render(); }; render(); };
-            document.getElementById('closeWatch').onclick = () => document.getElementById('watchBox').classList.remove('active'); render();
-        })();
-    </script>
+    <script src="js/lectures.js"></script>
 </body>
 
 </html>

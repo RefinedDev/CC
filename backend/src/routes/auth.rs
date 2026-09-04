@@ -8,13 +8,8 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
 
 const JWT_SECRET: &[u8] = b"capacity-connect-dev-secret-key";
-
-pub static USERS: LazyLock<Mutex<HashMap<String, UserRecord>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRecord {
@@ -89,8 +84,7 @@ async fn signup(Json(payload): Json<SignupRequest>) -> (StatusCode, Json<AuthRes
         );
     }
 
-    let mut users = USERS.lock().unwrap();
-    if users.values().any(|user| user.email == email) {
+    if crate::db::find_user_by_email(&email).map_err(|_| ()).ok().flatten().is_some() {
         return (
             StatusCode::CONFLICT,
             Json(AuthResponse {
@@ -101,7 +95,7 @@ async fn signup(Json(payload): Json<SignupRequest>) -> (StatusCode, Json<AuthRes
         );
     }
 
-    let id = format!("user_{}", users.len() + 1);
+    let id = format!("user_{}", chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default());
     let password_hash = hash_password(&payload.password);
     let user = UserRecord {
         id: id.clone(),
@@ -125,7 +119,12 @@ async fn signup(Json(payload): Json<SignupRequest>) -> (StatusCode, Json<AuthRes
         }
     };
 
-    users.insert(id.clone(), user.clone());
+    if crate::db::insert_user(&user).is_err() {
+        return (
+            StatusCode::CONFLICT,
+            Json(AuthResponse { token: None, user: None, message: "An account with this email already exists.".to_string() }),
+        );
+    }
 
     (
         StatusCode::CREATED,
@@ -157,8 +156,7 @@ async fn login(Json(payload): Json<LoginRequest>) -> (StatusCode, Json<AuthRespo
         );
     }
 
-    let users = USERS.lock().unwrap();
-    let user = match users.values().find(|user| user.email == email) {
+    let user = match crate::db::find_user_by_email(&email).ok().flatten() {
         Some(user) => user,
         None => {
             return (
@@ -250,8 +248,7 @@ async fn refresh_token(
         }
     };
 
-    let users = USERS.lock().unwrap();
-    let user = match users.get(&claims.sub) {
+    let user = match crate::db::find_user_by_id(&claims.sub).ok().flatten() {
         Some(user) => user,
         None => {
             return (
@@ -324,16 +321,6 @@ pub fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
     let validation = Validation::new(Algorithm::HS256);
     let token_data = decode::<Claims>(token, &DecodingKey::from_secret(JWT_SECRET), &validation)?;
     Ok(token_data.claims)
-}
-
-pub fn get_user_by_id(user_id: &str) -> Option<UserRecord> {
-    let users = USERS.lock().unwrap();
-    users.get(user_id).cloned()
-}
-
-pub fn get_user_by_email(email: &str) -> Option<UserRecord> {
-    let users = USERS.lock().unwrap();
-    users.values().find(|user| user.email == email).cloned()
 }
 
 pub fn auth_from_headers(headers: &HeaderMap) -> Result<Claims, &'static str> {

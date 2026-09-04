@@ -5,16 +5,8 @@ use axum::{
     routing::{delete, get, post, put},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
 
 use crate::routes::auth;
-
-pub static COURSES: LazyLock<Mutex<HashMap<String, CourseRecord>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
-pub static ENROLLMENTS: LazyLock<Mutex<HashMap<String, Vec<String>>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CourseRecord {
@@ -51,19 +43,10 @@ async fn list_courses(
         )
     })?;
 
-    let mut courses = COURSES.lock().unwrap();
-    if courses.len() == 0 {
-        courses.insert(
-            "1".to_string(),
-            CourseRecord {
-                id: "course_1".to_string(),
-                title: "Introduction to Rust".to_string(),
-                description: "Learn the basics of Rust programming language.".to_string(),
-                created_by: "admin".to_string(),
-            },
-        );
-    }
-    let payload = courses.values().cloned().collect::<Vec<CourseRecord>>();
+    let payload = crate::db::list_courses().map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to load courses." })),
+    ))?;
 
     Ok((StatusCode::OK, Json(serde_json::json!(payload))))
 }
@@ -88,15 +71,20 @@ async fn create_course(
         ));
     }
 
-    let mut courses = COURSES.lock().unwrap();
-    let id = format!("course_{}", courses.len() + 1);
+    let id = crate::db::next_course_id().map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to create course." })),
+    ))?;
     let course = CourseRecord {
         id: id.clone(),
         title: title.to_string(),
         description: description.to_string(),
         created_by: claims.sub.clone(),
     };
-    courses.insert(id.clone(), course.clone());
+    crate::db::insert_course(&course).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to create course." })),
+    ))?;
 
     Ok((
         StatusCode::CREATED,
@@ -120,16 +108,20 @@ async fn get_course(
         )
     })?;
 
-    let courses = COURSES.lock().unwrap();
-    let course = courses.get(&id).cloned().ok_or_else(|| {
+    let course = crate::db::find_course(&id).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to load course." })),
+    ))?.ok_or_else(|| {
         (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
         )
     })?;
 
-    let enrollments = ENROLLMENTS.lock().unwrap();
-    let enrolled_users = enrollments.get(&id).cloned().unwrap_or_default();
+    let enrolled_users = crate::db::enrolled_users(&id).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to load enrollments." })),
+    ))?;
 
     Ok((
         StatusCode::OK,
@@ -164,8 +156,10 @@ async fn update_course(
         ));
     }
 
-    let mut courses = COURSES.lock().unwrap();
-    let mut course = courses.get(&id).cloned().ok_or_else(|| {
+    let mut course = crate::db::find_course(&id).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to load course." })),
+    ))?.ok_or_else(|| {
         (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
@@ -174,7 +168,10 @@ async fn update_course(
 
     course.title = title.to_string();
     course.description = description.to_string();
-    courses.insert(id.clone(), course.clone());
+    crate::db::update_course(&course).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to update course." })),
+    ))?;
 
     Ok((
         StatusCode::OK,
@@ -198,17 +195,16 @@ async fn delete_course(
         )
     })?;
 
-    let mut courses = COURSES.lock().unwrap();
-    let removed = courses.remove(&id).is_some();
+    let removed = crate::db::delete_course(&id).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to delete course." })),
+    ))?;
     if !removed {
         return Err((
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
         ));
     }
-
-    let mut enrollments = ENROLLMENTS.lock().unwrap();
-    enrollments.remove(&id);
 
     Ok((
         StatusCode::OK,
@@ -227,19 +223,20 @@ async fn enroll_course(
         )
     })?;
 
-    let courses = COURSES.lock().unwrap();
-    if !courses.contains_key(&id) {
+    if !crate::db::find_course(&id).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to load course." })),
+    ))?.is_some() {
         return Err((
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
         ));
     }
 
-    let mut enrollments = ENROLLMENTS.lock().unwrap();
-    let list = enrollments.entry(id.clone()).or_default();
-    if !list.contains(&claims.sub) {
-        list.push(claims.sub.clone());
-    }
+    crate::db::enroll(&id, &claims.sub).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to enroll in course." })),
+    ))?;
 
     Ok((
         StatusCode::OK,
@@ -262,11 +259,10 @@ async fn unenroll_course(
         )
     })?;
 
-    let mut enrollments = ENROLLMENTS.lock().unwrap();
-    let list = enrollments.get_mut(&id);
-    if let Some(list) = list {
-        list.retain(|user_id| user_id != &claims.sub);
-    }
+    crate::db::unenroll(&id, &claims.sub).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to unenroll from course." })),
+    ))?;
 
     Ok((
         StatusCode::OK,
