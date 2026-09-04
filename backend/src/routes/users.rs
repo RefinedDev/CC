@@ -39,7 +39,7 @@ async fn get_profile(headers: HeaderMap) -> Result<(StatusCode, Json<serde_json:
         )
     })?;
 
-    let user = auth::get_user_by_id(&claims.sub).ok_or_else(|| {
+    let user = crate::db::find_user_by_id(&claims.sub).ok().flatten().ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({ "message": "User could not be found for this token." })),
@@ -68,7 +68,7 @@ async fn update_profile(
         )
     })?;
 
-    let mut user = auth::get_user_by_id(&claims.sub).ok_or_else(|| {
+    let mut user = crate::db::find_user_by_id(&claims.sub).ok().flatten().ok_or_else(|| {
         (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({ "message": "User could not be found for this token." })),
@@ -83,8 +83,16 @@ async fn update_profile(
         user.email = email.trim().to_lowercase();
     }
 
-    let mut users = auth::USERS.lock().unwrap();
-    users.insert(user.id.clone(), user.clone());
+    if crate::db::find_user_by_id(&user.id).ok().flatten().is_none() {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "message": "User could not be found for this token." })),
+        ));
+    }
+    crate::db::update_user(&user).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to update profile." })),
+    ))?;
 
     Ok((
         StatusCode::OK,
@@ -108,7 +116,7 @@ async fn get_user_by_id(
         )
     })?;
 
-    let user = auth::get_user_by_id(&id).ok_or_else(|| {
+    let user = crate::db::find_user_by_id(&id).ok().flatten().ok_or_else(|| {
         (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": format!("User {} not found.", id) })),
@@ -137,8 +145,10 @@ async fn delete_user(
         )
     })?;
 
-    let mut users = auth::USERS.lock().unwrap();
-    let removed = users.remove(&id).is_some();
+    let removed = crate::db::delete_user(&id).map_err(|_| (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "message": "Failed to delete user." })),
+    ))?;
 
     if !removed {
         return Err((
