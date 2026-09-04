@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Course Catalog | Capacity Connect</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .course-card .course-action {
+            margin-top: 14px
+        }
+
+        .enrolled-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(24, 185, 154, .14);
+            color: #19a985;
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 12px
+        }
+
+        .course-progress-mini {
+            height: 7px;
+            background: var(--surface-2);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 10px
+        }
+
+        .course-progress-mini i {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, #2867f2, #08b8d0)
+        }
+    </style>
+</head>
+
+<body data-auth="true" data-role="Trainee">
+    <aside class="sidebar"><a class="brand" href="trainee-dashboard.html"><img class="logo"
+                src="assets/logo.svg"><span>Capacity Connect</span></a>
+        <div class="side-links"><a href="trainee-dashboard.html">⌂ <span>Dashboard</span></a><a
+                href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓
+                <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a
+                href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆
+                <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a
+                href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎
+                <span>Profile</span></a><a href="settings.html">⚙ <span>Settings</span></a><a href="index.html"
+                data-logout>↪ <span>Logout</span></a></div>
+    </aside>
+    <div class="app">
+        <header class="dashboard-top"><button class="menu-btn" data-menu>☰</button>
+            <div class="search">⌕ <input placeholder="Search courses, resources..."></div><button class="theme-mini"
+                onclick="toggleTheme(localStorage.getItem('thing_theme')!=='dark')">☾</button>
+            <div class="top-user">🔔 <span data-user-name>User</span><small data-user-role>Trainee</small>
+                <div class="avatar" data-user-avatar>U</div>
+            </div>
+        </header>
+        <main class="content">
+            <div class="page-heading">
+                <div><span class="eyebrow">LEARNING</span>
+                    <h1>Course Catalog</h1>
+                    <p>Enroll in a course, then start learning from its lecture list.</p>
+                </div>
+                <div class="filter-row"><input placeholder="Search courses..."><select>
+                        <option>All Categories</option>
+                        <option>Programming</option>
+                        <option>Design</option>
+                    </select></div>
+            </div>
+            <div class="course-grid" id="courseGrid"></div>
+        </main>
+    </div>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const courses = [
+            { id: 'web', icon: '💻', color: 'blue', category: 'Web Development', title: 'Web Development Basics', desc: 'HTML, CSS and JavaScript fundamentals.', rating: '4.8', lessons: 16 },
+            { id: 'python', icon: '🐍', color: 'purple', category: 'Programming', title: 'Python Programming', desc: 'Build a strong foundation in Python.', rating: '4.7', lessons: 20 },
+            { id: 'cpp', icon: '🧩', color: 'green', category: 'Computer Science', title: 'Data Structures in C++', desc: 'Arrays, stacks, queues, trees and graphs.', rating: '4.6', lessons: 24 },
+            { id: 'uiux', icon: '🎨', color: 'orange', category: 'Design', title: 'UI/UX Design Principles', desc: 'Learn practical interface design.', rating: '4.9', lessons: 12 }
+        ];
+        function enrollments() { return JSON.parse(localStorage.getItem('thing_enrollments') || '{}'); }
+        function render() { const e = enrollments(); document.getElementById('courseGrid').innerHTML = courses.map(c => { const x = e[c.id]; let action; if (!x) action = `<a class="btn btn-primary course-action" href="enrollment.html?course=${c.id}">Enroll</a>`; else if (x.started || x.progress > 0) action = `<a class="btn btn-primary course-action" href="lectures.html?course=${c.id}">Continue Learning</a>`; else action = `<a class="btn btn-primary course-action" href="lectures.html?course=${c.id}">Start Learning</a>`; return `<article class="course-card"><div class="big-thumb ${c.color}">${c.icon}</div><div><span class="tag">${c.category}</span><h3>${c.title}</h3><p>${c.desc}</p><div class="course-meta">⭐ ${c.rating} • ${c.lessons} lessons</div>${x ? `<span class="enrolled-badge">✓ Enrolled • ${x.progress || 0}% complete</span><div class="course-progress-mini"><i style="width:${x.progress || 0}%"></i></div>` : ''}${action}</div></article>`; }).join(''); }
+        render();
+    </script>
+</body>
+
+</html>

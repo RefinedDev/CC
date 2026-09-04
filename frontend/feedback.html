@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Feedback | Capacity Connect</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .star-rating {
+            display: flex;
+            gap: 7px;
+            margin: 8px 0 4px
+        }
+
+        .star {
+            font-size: 38px;
+            line-height: 1;
+            background: none;
+            border: 0;
+            padding: 0;
+            cursor: pointer;
+            color: #9aa6b8;
+            transition: .15s
+        }
+
+        .star:hover,
+        .star.selected {
+            color: #f5b942;
+            transform: translateY(-2px)
+        }
+
+        .rating-label {
+            font-size: 14px;
+            opacity: .7
+        }
+    </style>
+</head>
+
+<body data-auth="true" data-role="Trainee">
+    <aside class="sidebar"><a class="brand" href="trainee-dashboard.html"><img class="logo"
+                src="assets/logo.svg"><span>Capacity Connect</span></a>
+        <div class="side-links"><a href="trainee-dashboard.html">⌂ <span>Dashboard</span></a><a
+                href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓
+                <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a
+                href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆
+                <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a
+                href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎
+                <span>Profile</span></a><a href="settings.html">⚙ <span>Settings</span></a><a href="index.html"
+                data-logout>↪ <span>Logout</span></a></div>
+    </aside>
+    <div class="app">
+        <header class="dashboard-top"><button class="menu-btn" data-menu>☰</button>
+            <div class="search">⌕ <input placeholder="Search courses, resources..."></div><button class="theme-mini"
+                onclick="toggleTheme(localStorage.getItem('thing_theme')!=='dark')">☾</button>
+            <div class="top-user">🔔 <span data-user-name>User</span><small data-user-role>Trainee</small>
+                <div class="avatar" data-user-avatar>U</div>
+            </div>
+        </header>
+        <main class="content">
+            <div class="page-heading">
+                <div><span class="eyebrow">FEEDBACK</span>
+                    <h1>Course Feedback</h1>
+                    <p>Help us improve your learning experience.</p>
+                </div>
+            </div>
+            <section class="panel form-card"><label>Course<select id="feedbackCourse">
+                        <option>Web Development Basics</option>
+                        <option>Python Programming</option>
+                        <option>Data Structures in C++</option>
+                        <option>UI/UX Design Principles</option>
+                    </select></label>
+                <div><label>Your Rating</label>
+                    <div class="star-rating" id="starRating" aria-label="Rate from 1 to 5 stars"><button type="button"
+                            class="star" data-value="1">★</button><button type="button" class="star"
+                            data-value="2">★</button><button type="button" class="star" data-value="3">★</button><button
+                            type="button" class="star" data-value="4">★</button><button type="button" class="star"
+                            data-value="5">★</button></div><span class="rating-label" id="ratingLabel">Select a rating
+                        out of 5</span>
+                </div><label>Your Feedback<textarea id="feedbackText"
+                        placeholder="Share your thoughts about the course..."></textarea></label><button
+                    class="btn btn-primary full" id="submitFeedback">Submit Feedback</button>
+            </section>
+        </main>
+    </div>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let rating = 0; document.querySelectorAll('.star').forEach(star => { star.addEventListener('click', () => { rating = Number(star.dataset.value); document.querySelectorAll('.star').forEach(s => s.classList.toggle('selected', Number(s.dataset.value) <= rating)); document.getElementById('ratingLabel').textContent = rating + ' / 5 stars selected'; }); star.addEventListener('mouseenter', () => { const n = Number(star.dataset.value); document.querySelectorAll('.star').forEach(s => s.style.color = Number(s.dataset.value) <= n ? '#f5b942' : ''); }); star.addEventListener('mouseleave', () => { document.querySelectorAll('.star').forEach(s => s.style.color = ''); }); }); document.getElementById('submitFeedback').addEventListener('click', () => { if (!rating) { alert('Please select a rating from 1 to 5 stars.'); return; } const data = { course: document.getElementById('feedbackCourse').value, rating, text: document.getElementById('feedbackText').value.trim(), date: new Date().toISOString() }; localStorage.setItem('thing_feedback', JSON.stringify(data)); showToast('Feedback submitted successfully!'); });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Login | Capacity Connect</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="auth-page">
+    <div class="auth-wrap"><a class="brand centered" href="index.html"><img class="logo" src="assets/logo.svg">The
+            Thing</a>
+        <div class="auth-card">
+            <h1>Welcome Back!</h1>
+            <p>Login to continue.</p>
+            <form action="#" method="post" onsubmit="return window.login(event);"><label>Email<input type="email" required
+                        id="login-email" placeholder="you@example.com"></label><label>Password<input id="login-password"
+                        type="password" required placeholder="••••••••"></label>
+                <div class="row-between"><label class="check"><input type="checkbox"> Remember me</label><a
+                        href="#">Forgot password?</a></div><button class="btn btn-primary full">Login</button>
+            </form>
+            <div class="divider">or continue with</div>
+            <div class="socials"><button type="button">Google</button><button type="button">Microsoft</button></div>
+            <p class="auth-bottom">Don't have an account? <a href="signup.html">Sign up</a></p>
+            <div class="demo-note">Use the email and password from your Capacity Connect account.</div>
+        </div>
+    </div>
+    <script src="js/auth.js?v=5"></script>
+    <script src="js/app.js?v=5"></script>
+</body>
+
+</html>
