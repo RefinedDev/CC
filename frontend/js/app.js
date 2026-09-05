@@ -20,13 +20,27 @@
     document.querySelectorAll('[data-user-name]').forEach(e => e.textContent = u ? u.name : 'User');
     document.querySelectorAll('[data-user-role]').forEach(e => e.textContent = u ? u.role : 'Guest');
     document.querySelectorAll('[data-user-avatar]').forEach(e => e.textContent = u ? u.name.trim().charAt(0).toUpperCase() : 'U');
+    if (u) document.querySelectorAll('.brand').forEach(brand => brand.setAttribute('href', Auth.dashboardFor(u.role)));
     document.querySelectorAll('[data-logout]').forEach(e => e.onclick = Auth.logout);
     document.querySelectorAll('[data-menu]').forEach(e => e.onclick = window.toggleSidebar);
     document.querySelectorAll('[data-theme-toggle]').forEach(e => e.onchange = () => Auth.toggleTheme(e.checked));
     const current = Auth.currentPage();
+    const pageRoles = {
+      'trainee-dashboard.html': 'trainee',
+      'trainer-dashboard.html': 'trainer',
+      'admin-dashboard.html': 'admin',
+      'course-management.html': 'trainer',
+      'trainer-questionnaire.html': 'trainer',
+      'performance.html': 'trainee',
+      'feedback.html': 'trainee'
+    };
     document.querySelectorAll('.side-links a').forEach(a => {
       if (a.getAttribute('href') === current) a.classList.add('active');
-      if (u && a.dataset.role && a.dataset.role !== u.role) a.style.display = 'none';
+      const target = (a.getAttribute('href') || '').split('?')[0];
+      const requiredRole = a.dataset.role || pageRoles[target];
+      if (u && requiredRole && String(requiredRole).toLowerCase() !== String(u.role).toLowerCase()) {
+        a.style.display = 'none';
+      }
     });
   }
 

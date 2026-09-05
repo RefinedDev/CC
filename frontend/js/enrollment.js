@@ -28,6 +28,13 @@
       document.getElementById('courseDescription').textContent = course.description;
       document.getElementById('successCourse').textContent = course.title;
       document.getElementById('startLearning').href = `lectures.html?course=${encodeURIComponent(course.id)}`;
+      const user = window.ThingAuth.getUser();
+      if (user && Array.isArray(course.enrolled_users) && course.enrolled_users.includes(user.id)) {
+        enrollCard.style.display = 'none';
+        success.style.display = 'block';
+        document.querySelector('#success p').firstChild.textContent = 'You are already enrolled in ';
+        form.remove();
+      }
     } catch (error) {
       showError(error.message || 'Unable to load this course.');
       form.querySelector('button').disabled = true;
