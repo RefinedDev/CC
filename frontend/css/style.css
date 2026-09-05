@@ -27,6 +27,16 @@ body.dark {
    --shadow: 0 15px 45px rgba(0, 0, 0, .3)
 }
 
+html:has(body.dark),
+body.dark,
+body.dark .app {
+   background: var(--bg);
+}
+
+.app {
+   min-height: 100vh;
+}
+
 html,
 body {
    margin: 0;

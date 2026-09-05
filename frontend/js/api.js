@@ -33,6 +33,7 @@
     put: (path, body) => request(path, {
       method: 'PUT',
       body: JSON.stringify(body)
-    })
+    }),
+    delete: path => request(path, { method: 'DELETE' })
   };
 })();

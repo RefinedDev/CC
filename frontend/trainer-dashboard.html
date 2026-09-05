@@ -9,11 +9,11 @@
 </head>
 
 <body data-auth="true" data-role="Trainer">
-    <aside class="sidebar"><a class="brand" href="trainee-dashboard.html"><img class="logo" src="assets/logo.svg">The
+    <aside class="sidebar"><a class="brand" href="trainer-dashboard.html"><img class="logo" src="assets/logo.svg">The
             Thing</a>
         <div class="side-links"><a href="trainee-dashboard.html" data-role="Trainee">⌂ <span>Dashboard</span></a><a
                 href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓
-                <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a
+                <span>Assessments</span></a><a href="course-management.html" data-role="Trainer">＋ <span>Manage Courses</span></a><a href="performance.html">📈 <span>Performance</span></a><a
                 href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆
                 <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a
                 href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎
@@ -36,10 +36,10 @@
                 <div><span class="eyebrow">TRAINER</span>
                     <h1>Trainer Dashboard</h1>
                     <p>Monitor learners and manage training content.</p>
-                </div><a class="btn btn-primary" href="trainer-questionnaire.html">＋ Create Assessment</a>
+                </div><div><a class="btn btn-primary" href="course-management.html">＋ Manage Courses</a> <a class="btn btn-ghost" href="trainer-questionnaire.html">Create Assessment</a></div>
             </div>
             <div class="stats">
-                <div><span>Total Trainees</span><b>120</b><em>+8 this month</em></div>
+                <div><span>Your Courses</span><b id="trainerCourseCount">—</b><em>Created by you</em></div>
                 <div><span>Assessments Created</span><b>15</b><em>3 active</em></div>
                 <div><span>Avg. Performance</span><b>76%</b><em>+4.2%</em></div>
                 <div><span>Resources Uploaded</span><b>18</b><em>+3 this week</em></div>
@@ -57,22 +57,21 @@
                     <div class="panel-title">
                         <h2>Recent Assessments</h2>
                     </div>
-                    <div class="resource-list">
-                        <div>📝 <span>HTML Assessment<small>Due: 25 Aug 2026</small></span></div>
-                        <div>📝 <span>Python Basics MCQ<small>Due: 28 Aug 2026</small></span></div>
-                        <div>📝 <span>CSS Fundamentals<small>Due: 30 Aug 2026</small></span></div>
-                    </div>
+                    <div class="resource-list" id="trainerCourses"><p>Loading your courses...</p></div>
                 </section>
             </div>
             <section class="panel">
                 <h2>Trainer tools</h2>
-                <p>Create questionnaires, upload learning resources and monitor trainee participation from this
+                <p>Create courses and questionnaires, upload learning resources and monitor trainee participation from this
                     role-specific dashboard.</p>
+                <a class="btn btn-primary" href="course-management.html">Open Manage Courses</a>
             </section>
         </main>
     </div>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/trainer-dashboard.js"></script>
 </body>
 
 </html>
