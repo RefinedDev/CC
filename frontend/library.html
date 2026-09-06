@@ -15,7 +15,7 @@
                 href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓
                 <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a
                 href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆
-                <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a
+                <span>Certificates</span></a><a
                 href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎
                 <span>Profile</span></a><a href="settings.html">⚙ <span>Settings</span></a><a
                 href="trainer-dashboard.html" data-role="Trainer">👨‍🏫 <span>Trainer Dashboard</span></a><a
@@ -38,10 +38,10 @@
                     <p>Videos, presentations and documents uploaded by trainers.</p>
                 </div><label id="resource-upload" class="btn btn-primary" style="display:none">＋ Upload<input id="resource-file" type="file" hidden></label>
             </div>
-            <div class="tabs"><button
-                    class="selected">All</button><button>Videos</button><button>Documents</button><button>PPTs</button>
+            <div class="tabs" id="resource-tabs"><button class="selected" data-kind="">All</button><button data-kind="Video">Videos</button><button data-kind="Document">Documents</button><button data-kind="PDF">PDFs</button><button data-kind="PPT">PPTs</button>
             </div>
             <section class="panel">
+                <div style="margin-bottom:16px"><label>Course <select id="resource-course-filter"><option value="">All courses</option></select></label></div>
                 <div class="resource-table">
                     <div class="resource-row header">
                         <span>Resource</span><span>Type</span><span>Size</span><span>Action</span></div>

@@ -5,14 +5,7 @@ use axum::{
     http::{HeaderMap, StatusCode},
     routing::{get, post},
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-#[allow(dead_code)]
-pub struct ApprovalRequest {
-    pub user_id: String,
-    pub action: String,
-}
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateRoleRequest {
@@ -24,11 +17,25 @@ pub fn router() -> Router {
         .route("/users", get(list_all_users))
         .route("/users/{id}/role", post(update_role))
         .route("/stats", get(get_stats))
-        .route("/users/{id}/approve", post(approve_user))
-        .route("/users/{id}/reject", post(reject_user))
-        .route("/dashboard", get(get_dashboard))
-        .route("/courses/{id}/approve", post(approve_course))
         .route("/notifications", post(send_notification))
+}
+
+fn require_admin(
+    headers: &HeaderMap,
+) -> Result<auth::Claims, (StatusCode, Json<serde_json::Value>)> {
+    let claims = auth::auth_from_headers(headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
+    if claims.role.to_ascii_lowercase() != "admin" {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "message": "Administrator access is required." })),
+        ));
+    }
+    Ok(claims)
 }
 
 async fn get_stats(
@@ -55,13 +62,13 @@ async fn list_all_users(
     headers: HeaderMap,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
     require_admin(&headers)?;
-    let users = crate::db::list_users().map_err(|_| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "message": "Failed to load users." })),
-        )
-    })?;
-    let users = users
+    let users = crate::db::list_users()
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load users." })),
+            )
+        })?
         .into_iter()
         .map(|user| {
             serde_json::json!({
@@ -82,9 +89,7 @@ async fn update_role(
     if !matches!(role.as_str(), "trainee" | "trainer" | "admin") {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "message": "Role must be trainee, trainer, or admin."
-            })),
+            Json(serde_json::json!({ "message": "Role must be trainee, trainer, or admin." })),
         ));
     }
     let mut user = crate::db::find_user_by_id(&id)
@@ -97,9 +102,7 @@ async fn update_role(
         .ok_or_else(|| {
             (
                 StatusCode::NOT_FOUND,
-                Json(serde_json::json!({
-                    "message": "User not found."
-                })),
+                Json(serde_json::json!({ "message": "User not found." })),
             )
         })?;
     user.role = role;
@@ -117,59 +120,42 @@ async fn update_role(
     ))
 }
 
-fn require_admin(
-    headers: &HeaderMap,
-) -> Result<auth::Claims, (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(headers).map_err(|_| {
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
-        )
-    })?;
-    if claims.role.to_ascii_lowercase() != "admin" {
+async fn send_notification(
+    headers: HeaderMap,
+    Json(payload): Json<serde_json::Value>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+    let claims = require_admin(&headers)?;
+    let kind = payload
+        .get("kind")
+        .and_then(|value| value.as_str())
+        .unwrap_or("notification");
+    let title = payload
+        .get("title")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .trim();
+    let body = payload
+        .get("body")
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .trim();
+    if title.is_empty() || body.is_empty() {
         return Err((
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({
-                "message": "Administrator access is required."
-            })),
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "message": "Title and body are required." })),
         ));
     }
-    Ok(claims)
-}
-
-async fn approve_user(Path(id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "message": format!("Approve user {} endpoint - TODO", id) })),
-    )
-}
-
-async fn reject_user(Path(id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "message": format!("Reject user {} endpoint - TODO", id) })),
-    )
-}
-
-async fn get_dashboard() -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "message": "Get admin dashboard endpoint - TODO" })),
-    )
-}
-
-async fn approve_course(Path(id): Path<String>) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "message": format!("Approve course {} endpoint - TODO", id) })),
-    )
-}
-
-async fn send_notification(
-    Json(_payload): Json<serde_json::Value>,
-) -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::CREATED,
-        Json(serde_json::json!({ "message": "Send notification endpoint - TODO" })),
-    )
+    let target_user_id = payload.get("target_user_id").and_then(|value| value.as_str()).map(str::trim).filter(|value| !value.is_empty());
+    if let Some(user_id) = target_user_id {
+        if crate::db::find_user_by_id(user_id).map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "message": "Failed to validate target user." }))))?.is_none() {
+            return Err((StatusCode::BAD_REQUEST, Json(serde_json::json!({ "message": "Target user was not found." }))));
+        }
+    }
+    let item = crate::db::insert_publication(kind, title, body, &claims.sub, target_user_id).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to publish." })),
+        )
+    })?;
+    Ok((StatusCode::CREATED, Json(serde_json::json!(item))))
 }

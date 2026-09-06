@@ -31,8 +31,7 @@
       'admin-dashboard.html': 'admin',
       'course-management.html': 'trainer',
       'trainer-questionnaire.html': 'trainer',
-      'performance.html': 'trainee',
-      'feedback.html': 'trainee'
+      'performance.html': 'trainee'
     };
     document.querySelectorAll('.side-links a').forEach(a => {
       if (a.getAttribute('href') === current) a.classList.add('active');
@@ -100,6 +99,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     // auth.js has already performed the access check synchronously.
     if (!Auth.getUser() && !new Set(['index.html', 'login.html', 'signup.html']).has(Auth.currentPage())) return;
-    setupShell(); initThemeButton(); initCertificate(); loadProfile();
+    setupShell(); initThemeButton(); loadProfile();
   });
 })();

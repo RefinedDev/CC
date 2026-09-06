@@ -13,7 +13,7 @@
     'trainee-dashboard.html', 'trainer-dashboard.html', 'admin-dashboard.html',
     'course-catalog.html', 'assessment-instructions.html', 'assessment.html',
     'assessment-result.html', 'performance.html', 'library.html', 'certificate.html',
-    'feedback.html', 'notifications.html', 'profile.html', 'settings.html',
+    'notifications.html', 'profile.html', 'settings.html',
     'trainer-questionnaire.html', 'course-management.html', 'lectures.html', 'enrollment.html'
   ]);
 

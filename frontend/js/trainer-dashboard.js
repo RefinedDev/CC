@@ -23,6 +23,14 @@
     assessmentList.innerHTML = analytics.assessments.length ? analytics.assessments.map(item =>
       `<div>📝 <span>${escapeText(item.title)}<small>${item.attempts} attempts · ${item.attempts ? `${item.average_score}% average` : 'No submissions yet'}</small></span></div>`
     ).join('') : '<p>No assessments created yet.</p>';
+    const traineeList = document.getElementById('trainerTrainees');
+    traineeList.innerHTML = analytics.trainees.length ? analytics.trainees.map(item =>
+      `<div>👤 <span>${escapeText(item.trainee_name)}<small>${escapeText(item.course_title)} · ${item.completed}/${item.total} lessons · ${item.completion_rate}%</small></span></div>`
+    ).join('') : '<p>No enrolled trainees yet.</p>';
+    const attempts = document.getElementById('trainerAssessmentAttempts');
+    attempts.innerHTML = analytics.attempts.length ? analytics.attempts.map(item =>
+      `<div>📝 <span>${escapeText(item.trainee_name)} · ${escapeText(item.assessment_title)}<small>${item.score}/${item.total} (${item.percent}%) · ${escapeText(item.submitted_at)}</small></span></div>`
+    ).join('') : '<p>No assessment attempts yet.</p>';
   }).catch(error => {
     list.innerHTML = `<p>${escapeText(error.message || 'Unable to load your courses.')}</p>`;
   });
