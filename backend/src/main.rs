@@ -24,11 +24,14 @@ fn app() -> Router {
 async fn main() {
     db::init().expect("failed to initialize database");
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:6969")
+    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "6969".to_string());
+    let address = format!("{host}:{port}");
+    let listener = tokio::net::TcpListener::bind(&address)
         .await
         .unwrap();
 
-    println!("Server on: http://localhost:6969/");
+    println!("Server on: http://{address}/");
     axum::serve(listener, app()).await.unwrap();
 }
 

@@ -6,7 +6,9 @@
   const USER_KEY = "thing_user";
   const TOKEN_KEY = "thing_token";
   const THEME_KEY = "thing_theme";
-  const API_BASE = "http://localhost:6969/api";
+  window.CAPACITY_API_BASE =
+    window.CAPACITY_API_BASE || "http://localhost:6969";
+  const API_BASE = `${window.CAPACITY_API_BASE}/api`;
 
   const PUBLIC_PAGES = new Set(["", "index.html", "login.html", "signup.html"]);
   const PROTECTED_PAGES = new Set([

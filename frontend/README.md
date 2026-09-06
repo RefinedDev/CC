@@ -18,4 +18,12 @@ This version integrates course enrollment, course-specific learning, and progres
 
 Assessments are backed by SQLite: trainers can create timed subject-based MCQs with multiple questions, trainees can submit attempts, and scores are persisted and displayed on the result page.
 
-Feedback, library, notifications, and certificate content still use frontend-only demo data until their backend endpoints are implemented.
+## Deployment
+
+GitHub Pages hosts the static frontend; run the Rust backend separately. Before publishing,
+replace the fallback in `js/auth.js` and `js/home.js` with the backend origin, for example
+`https://your-backend.example.com`. The local fallback is `http://localhost:6969`.
+
+The backend accepts `HOST`, `PORT`, and `JWT_SECRET` environment variables. It seeds the demo
+administrator on first startup using `ADMIN_EMAIL` and `ADMIN_PASSWORD`, defaulting to
+`admin@gmail.com` and `123456789`.

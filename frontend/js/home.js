@@ -1,7 +1,9 @@
 (function () {
   const target = document.getElementById("public-content");
   if (!target) return;
-  fetch("http://localhost:6969/api/publishing?kind=content")
+  fetch(
+    `${window.CAPACITY_API_BASE || "http://localhost:6969"}/api/publishing?kind=content`,
+  )
     .then((response) => response.json())
     .then((items) => {
       target.innerHTML = items.length

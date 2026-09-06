@@ -102,6 +102,26 @@ pub fn init() -> rusqlite::Result<()> {
          WHERE NOT EXISTS (SELECT 1 FROM lectures l WHERE l.course_id = c.id)",
         [],
     )?;
+    let admin_email = std::env::var("ADMIN_EMAIL").unwrap_or_else(|_| "admin@gmail.com".to_string());
+    let admin_password = std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "123456789".to_string());
+    let existing_admin: Option<String> = connection
+        .query_row(
+            "SELECT id FROM users WHERE email=?1",
+            params![admin_email.trim().to_ascii_lowercase()],
+            |row| row.get(0),
+        )
+        .optional()?;
+    if existing_admin.is_none() {
+        connection.execute(
+            "INSERT INTO users (id,name,email,password_hash,role) VALUES (?1,?2,?3,?4,'admin')",
+            params![
+                "admin_default",
+                "Administrator",
+                admin_email.trim().to_ascii_lowercase(),
+                crate::routes::auth::hash_password(&admin_password)
+            ],
+        )?;
+    }
     Ok(())
 }
 

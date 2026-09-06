@@ -8,7 +8,9 @@ use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, deco
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-const JWT_SECRET: &[u8] = b"capacity-connect-dev-secret-key";
+fn jwt_secret() -> String {
+    std::env::var("JWT_SECRET").unwrap_or_else(|_| "capacity-connect-demo-secret-change-me".to_string())
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRecord {
@@ -302,7 +304,7 @@ async fn refresh_token(
     )
 }
 
-fn hash_password(password: &str) -> String {
+pub(crate) fn hash_password(password: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(password.as_bytes());
     format!("{:x}", hasher.finalize())
@@ -324,13 +326,13 @@ fn create_token(user_id: &str, role: &str) -> Result<String, jsonwebtoken::error
     encode(
         &Header::new(Algorithm::HS256),
         &claims,
-        &EncodingKey::from_secret(JWT_SECRET),
+        &EncodingKey::from_secret(jwt_secret().as_bytes()),
     )
 }
 
 pub fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let validation = Validation::new(Algorithm::HS256);
-    let token_data = decode::<Claims>(token, &DecodingKey::from_secret(JWT_SECRET), &validation)?;
+    let token_data = decode::<Claims>(token, &DecodingKey::from_secret(jwt_secret().as_bytes()), &validation)?;
     Ok(token_data.claims)
 }
 
