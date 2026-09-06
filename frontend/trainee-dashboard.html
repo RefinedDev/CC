@@ -21,7 +21,7 @@
                 href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓
                 <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a
                 href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆
-                <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a
+                <span>Certificates</span></a><a
                 href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎
                 <span>Profile</span></a><a href="settings.html">⚙ <span>Settings</span></a><a
                 href="trainer-dashboard.html" data-role="Trainer">👨‍🏫 <span>Trainer Dashboard</span></a><a
@@ -47,9 +47,9 @@
             </section>
             <div class="stats">
                 <div><span>Enrolled Courses</span><b id="traineeCourseCount">—</b><em>From your account</em></div>
-                <div><span>Assessments</span><b>12</b><em>3 pending</em></div>
-                <div><span>Certificates</span><b>5</b><em>+1 recently</em></div>
-                <div><span>Learning Hours</span><b>36</b><em>+6 this week</em></div>
+                <div><span>Assessments</span><b id="traineeAssessmentCount">—</b><em id="traineeAssessmentDetail">Loading...</em></div>
+                <div><span>Certificates</span><b id="traineeCertificateCount">—</b><em>Completed courses</em></div>
+                <div><span>Lessons Completed</span><b id="traineeLessonCount">—</b><em>Across enrolled courses</em></div>
             </div>
             <div class="two-col">
                 <section class="panel">
@@ -57,6 +57,10 @@
                         <h2>Continue Learning</h2><a href="course-catalog.html">View all</a>
                     </div>
                     <div class="course-highlight" id="continueCourse"><p>Loading your courses...</p></div>
+                </section>
+                <section class="panel">
+                    <div class="panel-title"><h2>Recent Activity</h2><a href="notifications.html">View all</a></div>
+                    <div class="resource-list" id="traineeActivity"><p>Loading activity...</p></div>
                 </section>
                 <section class="panel">
                     <div class="panel-title">
@@ -69,10 +73,8 @@
                 <div class="panel-title">
                     <h2>Achievements</h2>
                 </div>
-                <div class="achievement-grid">
-                    <div>⭐ <b>Quick Learner</b><small>Completed 5 assessments</small></div>
-                    <div>🔥 <b>Consistent</b><small>7-day learning streak</small></div>
-                    <div>🏆 <b>Top Performer</b><small>90%+ in 3 assessments</small></div>
+                <div class="achievement-grid" id="traineeAchievements">
+                    <p>Loading achievements...</p>
                 </div>
             </section>
         </main>

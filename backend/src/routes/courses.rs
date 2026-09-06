@@ -89,8 +89,20 @@ async fn course_analytics(
             Json(serde_json::json!({ "message": "Failed to load assessment analytics." })),
         )
     })?;
+    let trainees = crate::db::trainee_progress_analytics(&claims.sub).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load trainee progress." })),
+        )
+    })?;
+    let attempts = crate::db::assessment_attempt_details(&claims.sub).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load assessment attempts." })),
+        )
+    })?;
     Ok(Json(
-        serde_json::json!({ "courses": courses, "assessments": assessments }),
+        serde_json::json!({ "courses": courses, "assessments": assessments, "trainees": trainees, "attempts": attempts }),
     ))
 }
 

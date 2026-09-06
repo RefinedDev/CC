@@ -15,7 +15,7 @@
                 href="course-catalog.html">▣ <span>Courses</span></a><a href="assessment-instructions.html">✓
                 <span>Assessments</span></a><a href="performance.html">📈 <span>Performance</span></a><a
                 href="library.html">▤ <span>Library</span></a><a href="certificate.html">🏆
-                <span>Certificates</span></a><a href="feedback.html">✎ <span>Feedback</span></a><a
+                <span>Certificates</span></a><a
                 href="notifications.html">🔔 <span>Notifications</span></a><a href="profile.html">◎
                 <span>Profile</span></a><a href="settings.html">⚙ <span>Settings</span></a><a
                 href="trainer-dashboard.html" data-role="Trainer">👨‍🏫 <span>Trainer Dashboard</span></a><a
@@ -71,6 +71,17 @@
             <section class="panel" style="margin-top:18px">
                 <div class="panel-title"><h2>User Roles</h2><span id="userMessage" role="status"></span></div>
                 <div id="userList" class="resource-list"><p>Loading users...</p></div>
+            </section>
+            <section class="panel" style="margin-top:18px">
+                <h2>Publish Platform Content</h2>
+                <form id="publish-form" class="form-grid">
+                    <label>Type<select id="publish-kind"><option value="announcement">Announcement</option><option value="notification">Notification</option><option value="achievement">Achievement</option><option value="content">Learning Content</option></select></label>
+                    <label>Target user<select id="publish-target"><option value="">Everyone</option></select></label>
+                    <label>Title<input id="publish-title" required></label>
+                    <label style="grid-column:1/-1">Message<textarea id="publish-body" required></textarea></label>
+                    <button class="btn btn-primary" type="submit">Publish</button>
+                </form>
+                <p id="publish-message" role="status"></p>
             </section>
         </main>
     </div>

@@ -66,8 +66,27 @@ pub fn init() -> rusqlite::Result<()> {
            content_base64 TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
            FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE SET NULL,
            FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE CASCADE
+         );
+         CREATE TABLE IF NOT EXISTS publications (
+           id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, title TEXT NOT NULL,
+           body TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+           FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE CASCADE
+         );
+         CREATE TABLE IF NOT EXISTS notification_reads (
+           publication_id INTEGER NOT NULL, user_id TEXT NOT NULL, read_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+           PRIMARY KEY (publication_id, user_id),
+           FOREIGN KEY(publication_id) REFERENCES publications(id) ON DELETE CASCADE,
+           FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
          );",
     )?;
+    let has_target: bool = connection.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('publications') WHERE name='target_user_id'",
+        [],
+        |row| row.get::<_, i64>(0),
+    )? > 0;
+    if !has_target {
+        connection.execute("ALTER TABLE publications ADD COLUMN target_user_id TEXT REFERENCES users(id) ON DELETE CASCADE", [])?;
+    }
     connection.execute(
         "INSERT INTO lectures (course_id, title, description, position)
          SELECT c.id, c.title || ' Overview', c.description, 1
@@ -76,6 +95,80 @@ pub fn init() -> rusqlite::Result<()> {
         [],
     )?;
     Ok(())
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PublicationRecord {
+    pub id: i64,
+    pub kind: String,
+    pub title: String,
+    pub body: String,
+    pub created_at: String,
+    pub target_user_id: Option<String>,
+    pub read: bool,
+}
+
+pub fn list_publications(kind: Option<&str>, user_id: &str) -> rusqlite::Result<Vec<PublicationRecord>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare("SELECT p.id,p.kind,p.title,p.body,p.created_at,p.target_user_id,EXISTS(SELECT 1 FROM notification_reads r WHERE r.publication_id=p.id AND r.user_id=?2) FROM publications p WHERE (?1 IS NULL OR p.kind=?1) AND (p.target_user_id IS NULL OR p.target_user_id=?2) ORDER BY p.created_at DESC,p.id DESC")?;
+    let rows = statement.query_map(params![kind, user_id], |row| {
+        Ok(PublicationRecord {
+            id: row.get(0)?,
+            kind: row.get(1)?,
+            title: row.get(2)?,
+            body: row.get(3)?,
+            created_at: row.get(4)?,
+            target_user_id: row.get(5)?,
+            read: row.get(6)?,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn insert_publication(
+    kind: &str,
+    title: &str,
+    body: &str,
+    created_by: &str,
+    target_user_id: Option<&str>,
+) -> rusqlite::Result<PublicationRecord> {
+    let connection = CONNECTION.lock().unwrap();
+    connection.execute(
+        "INSERT INTO publications (kind,title,body,created_by,target_user_id) VALUES (?1,?2,?3,?4,?5)",
+        params![kind, title, body, created_by, target_user_id],
+    )?;
+    let id = connection.last_insert_rowid();
+    connection.query_row(
+        "SELECT id,kind,title,body,created_at,target_user_id FROM publications WHERE id=?1",
+        params![id],
+        |row| {
+            Ok(PublicationRecord {
+                id: row.get(0)?,
+                kind: row.get(1)?,
+                title: row.get(2)?,
+                body: row.get(3)?,
+                created_at: row.get(4)?,
+                target_user_id: row.get(5)?,
+                read: false,
+            })
+        },
+    )
+}
+
+pub fn mark_publication_read(publication_id: i64, user_id: &str) -> rusqlite::Result<bool> {
+    let connection = CONNECTION.lock().unwrap();
+    Ok(connection.execute(
+        "INSERT OR IGNORE INTO notification_reads (publication_id,user_id) SELECT id,?2 FROM publications WHERE id=?1 AND (target_user_id IS NULL OR target_user_id=?2)",
+        params![publication_id, user_id],
+    )? > 0)
+}
+
+pub fn mark_all_publications_read(user_id: &str) -> rusqlite::Result<usize> {
+    let connection = CONNECTION.lock().unwrap();
+    connection.execute(
+        "INSERT OR IGNORE INTO notification_reads (publication_id,user_id) SELECT id,?1 FROM publications WHERE target_user_id IS NULL OR target_user_id=?1",
+        params![user_id],
+    )
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -173,6 +266,54 @@ pub fn assessment_analytics(user_id: &str) -> rusqlite::Result<Vec<serde_json::V
             "assessment_id": row.get::<_, i64>(0)?, "title": row.get::<_, String>(1)?,
             "subject": row.get::<_, String>(2)?, "attempts": row.get::<_, i64>(3)?,
             "average_score": row.get::<_, f64>(4)?.round()
+        }))
+    })?;
+    rows.collect()
+}
+
+pub fn trainee_progress_analytics(user_id: &str) -> rusqlite::Result<Vec<serde_json::Value>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare(
+        "SELECT u.id,u.name,c.id,c.title,COUNT(DISTINCT l.id),
+                COUNT(DISTINCT CASE WHEN p.completed=1 THEN p.lecture_id END)
+         FROM users u
+         JOIN enrollments e ON e.user_id=u.id
+         JOIN courses c ON c.id=e.course_id
+         LEFT JOIN lectures l ON l.course_id=c.id
+         LEFT JOIN lecture_progress p ON p.lecture_id=l.id AND p.user_id=u.id
+         WHERE c.created_by=?1
+         GROUP BY u.id,u.name,c.id,c.title ORDER BY u.name,c.title",
+    )?;
+    let rows = statement.query_map(params![user_id], |row| {
+        let total: i64 = row.get(4)?;
+        let completed: i64 = row.get(5)?;
+        Ok(serde_json::json!({
+            "trainee_id": row.get::<_, String>(0)?, "trainee_name": row.get::<_, String>(1)?,
+            "course_id": row.get::<_, String>(2)?, "course_title": row.get::<_, String>(3)?,
+            "completed": completed, "total": total,
+            "completion_rate": if total == 0 { 0 } else { (completed * 100 / total) }
+        }))
+    })?;
+    rows.collect()
+}
+
+pub fn assessment_attempt_details(user_id: &str) -> rusqlite::Result<Vec<serde_json::Value>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare(
+        "SELECT a.id,a.title,u.name,at.score,at.total,at.submitted_at
+         FROM assessment_attempts at
+         JOIN assessments a ON a.id=at.assessment_id
+         JOIN users u ON u.id=at.user_id
+         WHERE a.created_by=?1 ORDER BY at.submitted_at DESC",
+    )?;
+    let rows = statement.query_map(params![user_id], |row| {
+        let score: i64 = row.get(3)?;
+        let total: i64 = row.get(4)?;
+        Ok(serde_json::json!({
+            "assessment_id": row.get::<_, i64>(0)?, "assessment_title": row.get::<_, String>(1)?,
+            "trainee_name": row.get::<_, String>(2)?, "score": score, "total": total,
+            "percent": if total == 0 { 0 } else { score * 100 / total },
+            "submitted_at": row.get::<_, String>(5)?
         }))
     })?;
     rows.collect()
