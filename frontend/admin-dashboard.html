@@ -49,10 +49,7 @@
                     <div class="panel-title">
                         <h2>Enrollment Overview</h2>
                     </div>
-                    <div class="line-chart"><svg viewBox="0 0 500 160" preserveAspectRatio="none">
-                            <polyline points="0,135 70,120 140,130 210,90 280,98 350,60 420,68 500,25" fill="none"
-                                stroke="currentColor" stroke-width="4" />
-                        </svg></div>
+                    <div class="line-chart" id="enrollment-overview"><p>Loading enrollment data...</p></div>
                 </section>
                 <section class="panel">
                     <div class="panel-title">
@@ -64,9 +61,7 @@
             </div>
             <section class="panel">
                 <h2>Recent Activities</h2>
-                <div class="activity">● Dashboard data is loaded from the current database.</div>
-                <div class="activity">● Use User Roles below to manage account access.</div>
-                <div class="activity">● Certificate tracking will appear when certificates are implemented.</div>
+                <div id="admin-activity"><p>Loading recent activity...</p></div>
             </section>
             <section class="panel" style="margin-top:18px">
                 <div class="panel-title"><h2>User Roles</h2><span id="userMessage" role="status"></span></div>
@@ -82,6 +77,10 @@
                     <button class="btn btn-primary" type="submit">Publish</button>
                 </form>
                 <p id="publish-message" role="status"></p>
+            </section>
+            <section class="panel" style="margin-top:18px">
+                <div class="panel-title"><h2>Manage Published Content</h2><span>Announcements and homepage content</span></div>
+                <div id="published-content-list" class="resource-list"><p>Loading published content...</p></div>
             </section>
         </main>
     </div>

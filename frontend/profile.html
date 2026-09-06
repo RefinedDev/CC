@@ -48,11 +48,13 @@
                 </div>
                 <div class="form-grid"><label>Full Name<input id="profile-name"
                             data-profile-name></label><label>Email<input id="profile-email"
-                            placeholder="your@email.com"></label><label>Qualification<input
-                            placeholder="B.Tech / B.Sc / etc."></label><label>Experience<input
-                            placeholder="0-2 years"></label><label class="span-2">Skills<input
-                            placeholder="HTML, CSS, JavaScript, Python"></label><label class="span-2">Interests<textarea
-                            placeholder="Tell us about your interests..."></textarea></label></div><button
+                            placeholder="your@email.com"></label></div>
+                <section class="panel"><h3>Competency Mapping</h3><p>Use comma-separated skills and interests to improve course and trainer recommendations.</p>
+                    <label>Skills<input id="competency-skills" placeholder="Rust, SQL, Project Management"></label>
+                    <label>Interests<textarea id="competency-interests" placeholder="Backend development, analytics"></textarea></label>
+                    <button class="btn btn-ghost" onclick="saveCompetencies()">Save Skills & Interests</button>
+                    <div id="competency-recommendations"></div>
+                </section><button
                     class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
             </section>
         </main>

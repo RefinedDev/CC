@@ -33,6 +33,9 @@
         <h2>Manage lecture content</h2>
         <p>Select one of your courses to add or remove lectures.</p>
         <select id="managedCourse"><option value="">Loading courses...</option></select>
+        <label>Required skills<input id="courseRequirements" placeholder="Rust, SQL, Backend Development"></label>
+        <button id="saveRequirements" class="btn btn-ghost" type="button">Save Course Requirements</button>
+        <p id="requirementsMessage" role="status"></p>
         <form id="lectureForm" class="enroll-form" style="margin-top:16px">
           <label>Lecture title<input id="lectureTitle" required maxlength="120" placeholder="e.g. Variables and data types"></label>
           <label>Description<textarea id="lectureDescription" required maxlength="500" rows="3" placeholder="What this lecture covers"></textarea></label>
