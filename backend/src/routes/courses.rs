@@ -63,32 +63,51 @@ async fn create_lecture(
     Path(course_id): Path<String>,
     Json(payload): Json<CreateLectureRequest>,
 ) -> Result<(StatusCode, Json<LectureRecord>), (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(&headers).map_err(|_| (
-        StatusCode::UNAUTHORIZED,
-        Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
-    ))?;
-    let course = crate::db::find_course(&course_id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load course." })),
-    ))?.ok_or_else(|| (StatusCode::NOT_FOUND, Json(serde_json::json!({
-        "message": "Course not found."
-    }))))?;
+    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
+    let course = crate::db::find_course(&course_id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load course." })),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({
+                    "message": "Course not found."
+                })),
+            )
+        })?;
     if course.created_by != claims.sub {
-        return Err((StatusCode::FORBIDDEN, Json(serde_json::json!({
-            "message": "Only the course creator can manage its lectures."
-        }))));
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "message": "Only the course creator can manage its lectures."
+            })),
+        ));
     }
     let title = payload.title.trim();
     let description = payload.description.trim();
     if title.is_empty() || description.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, Json(serde_json::json!({
-            "message": "Lecture title and description are required."
-        }))));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "message": "Lecture title and description are required."
+            })),
+        ));
     }
-    let lecture = crate::db::insert_lecture(&course_id, title, description).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to create lecture." })),
-    ))?;
+    let lecture = crate::db::insert_lecture(&course_id, title, description).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to create lecture." })),
+        )
+    })?;
     Ok((StatusCode::CREATED, Json(lecture)))
 }
 
@@ -96,92 +115,144 @@ async fn delete_lecture(
     headers: HeaderMap,
     Path((course_id, lecture_id)): Path<(String, i64)>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(&headers).map_err(|_| (
-        StatusCode::UNAUTHORIZED,
-        Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
-    ))?;
-    let course = crate::db::find_course(&course_id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load course." })),
-    ))?.ok_or_else(|| (StatusCode::NOT_FOUND, Json(serde_json::json!({
-        "message": "Course not found."
-    }))))?;
+    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
+    let course = crate::db::find_course(&course_id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load course." })),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({
+                    "message": "Course not found."
+                })),
+            )
+        })?;
     if course.created_by != claims.sub {
-        return Err((StatusCode::FORBIDDEN, Json(serde_json::json!({
-            "message": "Only the course creator can manage its lectures."
-        }))));
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "message": "Only the course creator can manage its lectures."
+            })),
+        ));
     }
-    if !crate::db::delete_lecture(&course_id, lecture_id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to delete lecture." })),
-    ))? {
-        return Err((StatusCode::NOT_FOUND, Json(serde_json::json!({
-            "message": "Lecture not found."
-        }))));
+    if !crate::db::delete_lecture(&course_id, lecture_id).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to delete lecture." })),
+        )
+    })? {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "message": "Lecture not found."
+            })),
+        ));
     }
-    Ok((StatusCode::OK, Json(serde_json::json!({ "message": "Lecture deleted." }))))
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({ "message": "Lecture deleted." })),
+    ))
 }
 
 async fn get_progress(
     headers: HeaderMap,
     Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<ProgressResponse>), (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(&headers).map_err(|_| (
-        StatusCode::UNAUTHORIZED,
-        Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
-    ))?;
-    let completed_lectures = crate::db::completed_lectures(&claims.sub, &id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load progress." })),
-    ))?;
-    Ok((StatusCode::OK, Json(ProgressResponse { completed_lectures })))
+    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
+    let completed_lectures = crate::db::completed_lectures(&claims.sub, &id).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load progress." })),
+        )
+    })?;
+    Ok((
+        StatusCode::OK,
+        Json(ProgressResponse { completed_lectures }),
+    ))
 }
 
 async fn complete_lecture(
     headers: HeaderMap,
     Path((id, lecture_id)): Path<(String, i64)>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(&headers).map_err(|_| (
-        StatusCode::UNAUTHORIZED,
-        Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
-    ))?;
-    let completed = crate::db::mark_lecture_complete(&claims.sub, &id, lecture_id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to save progress." })),
-    ))?;
+    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
+    let completed =
+        crate::db::mark_lecture_complete(&claims.sub, &id, lecture_id).map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to save progress." })),
+            )
+        })?;
     if !completed {
-        return Err((StatusCode::NOT_FOUND, Json(serde_json::json!({
-            "message": "Lecture not found for this course."
-        }))));
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "message": "Lecture not found for this course."
+            })),
+        ));
     }
-    Ok((StatusCode::OK, Json(serde_json::json!({
-        "message": "Lecture completed.",
-        "lecture_id": lecture_id
-    }))))
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "message": "Lecture completed.",
+            "lecture_id": lecture_id
+        })),
+    ))
 }
 
 async fn list_lectures(
     headers: HeaderMap,
     Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<Vec<LectureRecord>>), (StatusCode, Json<serde_json::Value>)> {
-    auth::auth_from_headers(&headers).map_err(|_| (
-        StatusCode::UNAUTHORIZED,
-        Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
-    ))?;
+    auth::auth_from_headers(&headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
 
-    if crate::db::find_course(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load course." })),
-    ))?.is_none() {
-        return Err((StatusCode::NOT_FOUND, Json(serde_json::json!({
-            "message": format!("Course {} not found.", id)
-        }))));
+    if crate::db::find_course(&id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load course." })),
+            )
+        })?
+        .is_none()
+    {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "message": format!("Course {} not found.", id)
+            })),
+        ));
     }
 
-    let lectures = crate::db::list_lectures(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load lectures." })),
-    ))?;
+    let lectures = crate::db::list_lectures(&id).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load lectures." })),
+        )
+    })?;
     Ok((StatusCode::OK, Json(lectures)))
 }
 
@@ -195,16 +266,20 @@ async fn list_courses(
         )
     })?;
 
-    let courses = crate::db::list_courses().map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load courses." })),
-    ))?;
+    let courses = crate::db::list_courses().map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load courses." })),
+        )
+    })?;
     let mut payload = Vec::with_capacity(courses.len());
     for course in courses {
-        let enrolled_users = crate::db::enrolled_users(&course.id).map_err(|_| (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "message": "Failed to load enrollments." })),
-        ))?;
+        let enrolled_users = crate::db::enrolled_users(&course.id).map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load enrollments." })),
+            )
+        })?;
         payload.push(serde_json::json!({
             "id": course.id,
             "title": course.title,
@@ -227,10 +302,16 @@ async fn create_course(
             Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
         )
     })?;
-    if !matches!(claims.role.to_ascii_lowercase().as_str(), "trainer" | "admin") {
-        return Err((StatusCode::FORBIDDEN, Json(serde_json::json!({
-            "message": "Trainer or administrator access is required."
-        }))));
+    if !matches!(
+        claims.role.to_ascii_lowercase().as_str(),
+        "trainer" | "admin"
+    ) {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "message": "Trainer or administrator access is required."
+            })),
+        ));
     }
 
     let title = payload.title.trim();
@@ -242,20 +323,24 @@ async fn create_course(
         ));
     }
 
-    let id = crate::db::next_course_id().map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to create course." })),
-    ))?;
+    let id = crate::db::next_course_id().map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to create course." })),
+        )
+    })?;
     let course = CourseRecord {
         id: id.clone(),
         title: title.to_string(),
         description: description.to_string(),
         created_by: claims.sub.clone(),
     };
-    crate::db::insert_course(&course).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to create course." })),
-    ))?;
+    crate::db::insert_course(&course).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to create course." })),
+        )
+    })?;
 
     Ok((
         StatusCode::CREATED,
@@ -279,20 +364,26 @@ async fn get_course(
         )
     })?;
 
-    let course = crate::db::find_course(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load course." })),
-    ))?.ok_or_else(|| {
+    let course = crate::db::find_course(&id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load course." })),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
+            )
+        })?;
+
+    let enrolled_users = crate::db::enrolled_users(&id).map_err(|_| {
         (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load enrollments." })),
         )
     })?;
-
-    let enrolled_users = crate::db::enrolled_users(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load enrollments." })),
-    ))?;
 
     Ok((
         StatusCode::OK,
@@ -327,22 +418,28 @@ async fn update_course(
         ));
     }
 
-    let mut course = crate::db::find_course(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load course." })),
-    ))?.ok_or_else(|| {
-        (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
-        )
-    })?;
+    let mut course = crate::db::find_course(&id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load course." })),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
+            )
+        })?;
 
     course.title = title.to_string();
     course.description = description.to_string();
-    crate::db::update_course(&course).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to update course." })),
-    ))?;
+    crate::db::update_course(&course).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to update course." })),
+        )
+    })?;
 
     Ok((
         StatusCode::OK,
@@ -366,10 +463,12 @@ async fn delete_course(
         )
     })?;
 
-    let removed = crate::db::delete_course(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to delete course." })),
-    ))?;
+    let removed = crate::db::delete_course(&id).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to delete course." })),
+        )
+    })?;
     if !removed {
         return Err((
             StatusCode::NOT_FOUND,
@@ -394,20 +493,27 @@ async fn enroll_course(
         )
     })?;
 
-    if !crate::db::find_course(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to load course." })),
-    ))?.is_some() {
+    if !crate::db::find_course(&id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to load course." })),
+            )
+        })?
+        .is_some()
+    {
         return Err((
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": format!("Course {} not found.", id) })),
         ));
     }
 
-    crate::db::enroll(&id, &claims.sub).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to enroll in course." })),
-    ))?;
+    crate::db::enroll(&id, &claims.sub).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to enroll in course." })),
+        )
+    })?;
 
     Ok((
         StatusCode::OK,
@@ -430,10 +536,12 @@ async fn unenroll_course(
         )
     })?;
 
-    crate::db::unenroll(&id, &claims.sub).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to unenroll from course." })),
-    ))?;
+    crate::db::unenroll(&id, &claims.sub).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to unenroll from course." })),
+        )
+    })?;
 
     Ok((
         StatusCode::OK,

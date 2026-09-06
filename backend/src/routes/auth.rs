@@ -1,6 +1,5 @@
 use axum::{
-    Json,
-    Router,
+    Json, Router,
     http::{HeaderMap, StatusCode},
     routing::post,
 };
@@ -84,7 +83,12 @@ async fn signup(Json(payload): Json<SignupRequest>) -> (StatusCode, Json<AuthRes
         );
     }
 
-    if crate::db::find_user_by_email(&email).map_err(|_| ()).ok().flatten().is_some() {
+    if crate::db::find_user_by_email(&email)
+        .map_err(|_| ())
+        .ok()
+        .flatten()
+        .is_some()
+    {
         return (
             StatusCode::CONFLICT,
             Json(AuthResponse {
@@ -95,7 +99,10 @@ async fn signup(Json(payload): Json<SignupRequest>) -> (StatusCode, Json<AuthRes
         );
     }
 
-    let id = format!("user_{}", chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default());
+    let id = format!(
+        "user_{}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    );
     let password_hash = hash_password(&payload.password);
     let user = UserRecord {
         id: id.clone(),
@@ -122,7 +129,11 @@ async fn signup(Json(payload): Json<SignupRequest>) -> (StatusCode, Json<AuthRes
     if crate::db::insert_user(&user).is_err() {
         return (
             StatusCode::CONFLICT,
-            Json(AuthResponse { token: None, user: None, message: "An account with this email already exists.".to_string() }),
+            Json(AuthResponse {
+                token: None,
+                user: None,
+                message: "An account with this email already exists.".to_string(),
+            }),
         );
     }
 
