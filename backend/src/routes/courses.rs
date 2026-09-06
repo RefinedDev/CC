@@ -46,6 +46,7 @@ pub fn router() -> Router {
     Router::new()
         .route("/", get(list_courses))
         .route("/", post(create_course))
+        .route("/analytics", get(course_analytics))
         .route("/{id}", get(get_course))
         .route("/{id}", put(update_course))
         .route("/{id}", delete(delete_course))
@@ -56,6 +57,41 @@ pub fn router() -> Router {
         .route("/{id}/progress/{lecture_id}", post(complete_lecture))
         .route("/{id}/enroll", post(enroll_course))
         .route("/{id}/unenroll", post(unenroll_course))
+}
+
+async fn course_analytics(
+    headers: HeaderMap,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
+        )
+    })?;
+    if !matches!(
+        claims.role.to_ascii_lowercase().as_str(),
+        "trainer" | "admin"
+    ) {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "message": "Trainer or administrator access is required." })),
+        ));
+    }
+    let courses = crate::db::course_analytics(&claims.sub).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load course analytics." })),
+        )
+    })?;
+    let assessments = crate::db::assessment_analytics(&claims.sub).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to load assessment analytics." })),
+        )
+    })?;
+    Ok(Json(
+        serde_json::json!({ "courses": courses, "assessments": assessments }),
+    ))
 }
 
 async fn create_lecture(

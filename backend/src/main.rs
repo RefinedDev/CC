@@ -1,10 +1,10 @@
 use axum::{Router, routing::get};
 use tower_http::cors::CorsLayer;
 
-mod routes;
 mod db;
+mod routes;
 
-use routes::{admin, assessments, auth, courses, users};
+use routes::{admin, assessments, auth, courses, resources, users};
 
 #[tokio::main]
 async fn main() {
@@ -14,6 +14,7 @@ async fn main() {
         .nest("/api/users", users::router())
         .nest("/api/courses", courses::router())
         .nest("/api/assessments", assessments::router())
+        .nest("/api/resources", resources::router())
         .nest("/api/admin", admin::router())
         .route("/", get(home))
         .layer(CorsLayer::very_permissive());
