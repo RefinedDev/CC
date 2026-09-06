@@ -31,7 +31,9 @@ pub fn router() -> Router {
         .route("/{id}", delete(delete_user))
 }
 
-async fn get_profile(headers: HeaderMap) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+async fn get_profile(
+    headers: HeaderMap,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
     let claims = auth::auth_from_headers(&headers).map_err(|_| {
         (
             StatusCode::UNAUTHORIZED,
@@ -39,12 +41,15 @@ async fn get_profile(headers: HeaderMap) -> Result<(StatusCode, Json<serde_json:
         )
     })?;
 
-    let user = crate::db::find_user_by_id(&claims.sub).ok().flatten().ok_or_else(|| {
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({ "message": "User could not be found for this token." })),
-        )
-    })?;
+    let user = crate::db::find_user_by_id(&claims.sub)
+        .ok()
+        .flatten()
+        .ok_or_else(|| {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({ "message": "User could not be found for this token." })),
+            )
+        })?;
 
     Ok((
         StatusCode::OK,
@@ -68,12 +73,15 @@ async fn update_profile(
         )
     })?;
 
-    let mut user = crate::db::find_user_by_id(&claims.sub).ok().flatten().ok_or_else(|| {
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({ "message": "User could not be found for this token." })),
-        )
-    })?;
+    let mut user = crate::db::find_user_by_id(&claims.sub)
+        .ok()
+        .flatten()
+        .ok_or_else(|| {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({ "message": "User could not be found for this token." })),
+            )
+        })?;
 
     if let Some(name) = payload.name.filter(|value| !value.trim().is_empty()) {
         user.name = name.trim().to_string();
@@ -83,16 +91,22 @@ async fn update_profile(
         user.email = email.trim().to_lowercase();
     }
 
-    if crate::db::find_user_by_id(&user.id).ok().flatten().is_none() {
+    if crate::db::find_user_by_id(&user.id)
+        .ok()
+        .flatten()
+        .is_none()
+    {
         return Err((
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "message": "User could not be found for this token." })),
         ));
     }
-    crate::db::update_user(&user).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to update profile." })),
-    ))?;
+    crate::db::update_user(&user).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to update profile." })),
+        )
+    })?;
 
     Ok((
         StatusCode::OK,
@@ -116,12 +130,15 @@ async fn get_user_by_id(
         )
     })?;
 
-    let user = crate::db::find_user_by_id(&id).ok().flatten().ok_or_else(|| {
-        (
-            StatusCode::NOT_FOUND,
-            Json(serde_json::json!({ "message": format!("User {} not found.", id) })),
-        )
-    })?;
+    let user = crate::db::find_user_by_id(&id)
+        .ok()
+        .flatten()
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "message": format!("User {} not found.", id) })),
+            )
+        })?;
 
     Ok((
         StatusCode::OK,
@@ -145,10 +162,12 @@ async fn delete_user(
         )
     })?;
 
-    let removed = crate::db::delete_user(&id).map_err(|_| (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(serde_json::json!({ "message": "Failed to delete user." })),
-    ))?;
+    let removed = crate::db::delete_user(&id).map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "message": "Failed to delete user." })),
+        )
+    })?;
 
     if !removed {
         return Err((

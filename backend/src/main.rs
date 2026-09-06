@@ -4,7 +4,7 @@ use tower_http::cors::CorsLayer;
 mod routes;
 mod db;
 
-use routes::{admin, auth, courses, users};
+use routes::{admin, assessments, auth, courses, users};
 
 #[tokio::main]
 async fn main() {
@@ -13,6 +13,7 @@ async fn main() {
         .nest("/api/auth", auth::router())
         .nest("/api/users", users::router())
         .nest("/api/courses", courses::router())
+        .nest("/api/assessments", assessments::router())
         .nest("/api/admin", admin::router())
         .route("/", get(home))
         .layer(CorsLayer::very_permissive());
