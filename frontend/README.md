@@ -16,4 +16,6 @@ This version integrates course enrollment, course-specific learning, and progres
 
 ## Current scope
 
-Assessment, feedback, library, notifications, and certificate content still use frontend-only demo data until their backend endpoints are implemented.
+Assessments are backed by SQLite: trainers can create timed subject-based MCQs with multiple questions, trainees can submit attempts, and scores are persisted and displayed on the result page.
+
+Feedback, library, notifications, and certificate content still use frontend-only demo data until their backend endpoints are implemented.
