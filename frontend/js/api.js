@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const API_BASE = `${window.CAPACITY_API_BASE || "http://localhost:6969"}/api`;
+  const API_BASE = `${window.CAPACITY_API_BASE || "https://capacity-connect-b5w3.onrender.com"}/api`;
 
   async function request(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, {

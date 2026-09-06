@@ -7,7 +7,7 @@
   const TOKEN_KEY = "thing_token";
   const THEME_KEY = "thing_theme";
   window.CAPACITY_API_BASE =
-    window.CAPACITY_API_BASE || "http://localhost:6969";
+    window.CAPACITY_API_BASE || "https://capacity-connect-b5w3.onrender.com";
   const API_BASE = `${window.CAPACITY_API_BASE}/api`;
 
   const PUBLIC_PAGES = new Set(["", "index.html", "login.html", "signup.html"]);

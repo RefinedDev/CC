@@ -2,7 +2,7 @@
   const target = document.getElementById("public-content");
   if (!target) return;
   fetch(
-    `${window.CAPACITY_API_BASE || "http://localhost:6969"}/api/publishing?kind=content`,
+    `${window.CAPACITY_API_BASE || "https://capacity-connect-b5w3.onrender.com"}/api/publishing?kind=content`,
   )
     .then((response) => response.json())
     .then((items) => {
