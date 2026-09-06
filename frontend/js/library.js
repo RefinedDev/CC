@@ -1,56 +1,155 @@
 (function () {
-  'use strict';
-  const list = document.getElementById('resource-list');
-  const upload = document.getElementById('resource-upload');
+  "use strict";
+  const list = document.getElementById("resource-list");
+  const upload = document.getElementById("resource-upload");
   const user = window.ThingAuth.getUser();
-  const escape = value => String(value).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-  const formatSize = bytes => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  let resources = [], selectedKind = '', selectedCourse = '', courseNames = {};
-  function kind(file) { return file.type.includes('pdf') ? 'PDF' : file.type.includes('presentation') ? 'PPT' : file.type.startsWith('video/') ? 'Video' : 'Document'; }
+  const escape = (value) =>
+    String(value).replace(
+      /[&<>'"]/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "'": "&#39;",
+          '"': "&quot;",
+        })[c],
+    );
+  const formatSize = (bytes) =>
+    bytes < 1024 * 1024
+      ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+      : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  let resources = [],
+    selectedKind = "",
+    selectedCourse = "",
+    courseNames = {};
+  function kind(file) {
+    return file.type.includes("pdf")
+      ? "PDF"
+      : file.type.includes("presentation")
+        ? "PPT"
+        : file.type.startsWith("video/")
+          ? "Video"
+          : "Document";
+  }
   function bindActions() {
-    list.querySelectorAll('.download-resource').forEach(button => button.onclick = async () => {
-      const data = await window.CapacityApi.get(`/resources/${button.dataset.id}/download`);
-      const binary = atob(data.content_base64); const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-      const blob = new Blob([bytes]); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = data.name; link.click(); URL.revokeObjectURL(link.href);
-    });
-    list.querySelectorAll('.delete-resource').forEach(button => button.onclick = async () => {
-      if (confirm('Delete this resource?')) { await window.CapacityApi.delete(`/resources/${button.dataset.id}`); load(); }
-    });
+    list.querySelectorAll(".download-resource").forEach(
+      (button) =>
+        (button.onclick = async () => {
+          const data = await window.CapacityApi.get(
+            `/resources/${button.dataset.id}/download`,
+          );
+          const binary = atob(data.content_base64);
+          const bytes = Uint8Array.from(binary, (character) =>
+            character.charCodeAt(0),
+          );
+          const blob = new Blob([bytes]);
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = data.name;
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }),
+    );
+    list.querySelectorAll(".delete-resource").forEach(
+      (button) =>
+        (button.onclick = async () => {
+          if (confirm("Delete this resource?")) {
+            await window.CapacityApi.delete(`/resources/${button.dataset.id}`);
+            load();
+          }
+        }),
+    );
   }
   function render() {
-    const filtered = resources.filter(item => (!selectedKind || item.kind === selectedKind) && (!selectedCourse || item.course_id === selectedCourse));
-    list.innerHTML = filtered.length ? filtered.map(item => `<div class="resource-row"><span>📎 ${escape(item.name)}<small>${escape(courseNames[item.course_id] || 'General resource')} · ${escape(item.created_at)}</small></span><span><i class="pill blue">${escape(item.kind)}</i></span><span>${formatSize(item.size_bytes)}</span><span><button class="download-resource" data-id="${item.id}">Download</button>${item.created_by === user.id ? ` <button class="delete-resource" data-id="${item.id}">Delete</button>` : ''}</span></div>`).join('') : '<p>No resources match the selected filters.</p>';
+    const filtered = resources.filter(
+      (item) =>
+        (!selectedKind || item.kind === selectedKind) &&
+        (!selectedCourse || item.course_id === selectedCourse),
+    );
+    list.innerHTML = filtered.length
+      ? filtered
+          .map(
+            (item) =>
+              `<div class="resource-row"><span>📎 ${escape(item.name)}<small>${escape(courseNames[item.course_id] || "General resource")} · ${escape(item.created_at)}</small></span><span><i class="pill blue">${escape(item.kind)}</i></span><span>${formatSize(item.size_bytes)}</span><span><button class="download-resource" data-id="${item.id}">Download</button>${item.created_by === user.id ? ` <button class="delete-resource" data-id="${item.id}">Delete</button>` : ""}</span></div>`,
+          )
+          .join("")
+      : "<p>No resources match the selected filters.</p>";
     bindActions();
   }
   async function load() {
-    try { resources = await window.CapacityApi.get('/resources'); render(); }
-    catch (error) { list.innerHTML = `<p>${escape(error.message)}</p>`; }
+    try {
+      resources = await window.CapacityApi.get("/resources");
+      render();
+    } catch (error) {
+      list.innerHTML = `<p>${escape(error.message)}</p>`;
+    }
   }
-  document.addEventListener('DOMContentLoaded', async () => {
-    if (user && ['trainer', 'admin'].includes(String(user.role).toLowerCase())) upload.style.display = 'block';
-    const courses = await window.CapacityApi.get('/courses');
-    courseNames = Object.fromEntries(courses.map(course => [course.id, course.title]));
-    const filter = document.getElementById('resource-course-filter');
-    filter.innerHTML += courses.map(course => `<option value="${escape(course.id)}">${escape(course.title)}</option>`).join('');
-    const uploadCourse = document.createElement('select');
-    uploadCourse.id = 'resource-upload-course';
-    uploadCourse.innerHTML = '<option value="">General resource</option>' + courses.map(course => `<option value="${escape(course.id)}">${escape(course.title)}</option>`).join('');
+  document.addEventListener("DOMContentLoaded", async () => {
+    if (user && ["trainer", "admin"].includes(String(user.role).toLowerCase()))
+      upload.style.display = "block";
+    const courses = await window.CapacityApi.get("/courses");
+    courseNames = Object.fromEntries(
+      courses.map((course) => [course.id, course.title]),
+    );
+    const filter = document.getElementById("resource-course-filter");
+    filter.innerHTML += courses
+      .map(
+        (course) =>
+          `<option value="${escape(course.id)}">${escape(course.title)}</option>`,
+      )
+      .join("");
+    const uploadCourse = document.createElement("select");
+    uploadCourse.id = "resource-upload-course";
+    uploadCourse.innerHTML =
+      '<option value="">General resource</option>' +
+      courses
+        .map(
+          (course) =>
+            `<option value="${escape(course.id)}">${escape(course.title)}</option>`,
+        )
+        .join("");
     uploadCourse.style.display = upload.style.display;
     upload.parentElement.insertBefore(uploadCourse, upload);
-    filter.onchange = event => { selectedCourse = event.target.value; render(); };
-    document.querySelectorAll('#resource-tabs button').forEach(button => button.onclick = () => {
-      document.querySelectorAll('#resource-tabs button').forEach(item => item.classList.remove('selected'));
-      button.classList.add('selected'); selectedKind = button.dataset.kind; render();
-    });
-    document.getElementById('resource-file').onchange = event => {
-      const file = event.target.files[0]; if (!file) return;
-      if (file.size > 25 * 1024 * 1024) return window.showToast('Files must be 25 MB or smaller.');
-      const reader = new FileReader(); reader.onload = async () => {
+    filter.onchange = (event) => {
+      selectedCourse = event.target.value;
+      render();
+    };
+    document.querySelectorAll("#resource-tabs button").forEach(
+      (button) =>
+        (button.onclick = () => {
+          document
+            .querySelectorAll("#resource-tabs button")
+            .forEach((item) => item.classList.remove("selected"));
+          button.classList.add("selected");
+          selectedKind = button.dataset.kind;
+          render();
+        }),
+    );
+    document.getElementById("resource-file").onchange = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 25 * 1024 * 1024)
+        return window.showToast("Files must be 25 MB or smaller.");
+      const reader = new FileReader();
+      reader.onload = async () => {
         try {
-          await window.CapacityApi.post('/resources', { name: file.name, kind: kind(file), size_bytes: file.size, course_id: document.getElementById('resource-upload-course').value || null, content_base64: String(reader.result).split(',')[1] });
-          window.showToast('Resource uploaded.'); event.target.value = ''; load();
-        } catch (error) { window.showToast(error.message); }
-      }; reader.readAsDataURL(file);
+          await window.CapacityApi.post("/resources", {
+            name: file.name,
+            kind: kind(file),
+            size_bytes: file.size,
+            course_id:
+              document.getElementById("resource-upload-course").value || null,
+            content_base64: String(reader.result).split(",")[1],
+          });
+          window.showToast("Resource uploaded.");
+          event.target.value = "";
+          load();
+        } catch (error) {
+          window.showToast(error.message);
+        }
+      };
+      reader.readAsDataURL(file);
     };
     load();
   });

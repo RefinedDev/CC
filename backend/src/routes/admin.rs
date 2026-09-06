@@ -145,17 +145,33 @@ async fn send_notification(
             Json(serde_json::json!({ "message": "Title and body are required." })),
         ));
     }
-    let target_user_id = payload.get("target_user_id").and_then(|value| value.as_str()).map(str::trim).filter(|value| !value.is_empty());
+    let target_user_id = payload
+        .get("target_user_id")
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
     if let Some(user_id) = target_user_id {
-        if crate::db::find_user_by_id(user_id).map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "message": "Failed to validate target user." }))))?.is_none() {
-            return Err((StatusCode::BAD_REQUEST, Json(serde_json::json!({ "message": "Target user was not found." }))));
+        if crate::db::find_user_by_id(user_id)
+            .map_err(|_| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "message": "Failed to validate target user." })),
+                )
+            })?
+            .is_none()
+        {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "message": "Target user was not found." })),
+            ));
         }
     }
-    let item = crate::db::insert_publication(kind, title, body, &claims.sub, target_user_id).map_err(|_| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "message": "Failed to publish." })),
-        )
-    })?;
+    let item = crate::db::insert_publication(kind, title, body, &claims.sub, target_user_id)
+        .map_err(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "message": "Failed to publish." })),
+            )
+        })?;
     Ok((StatusCode::CREATED, Json(serde_json::json!(item))))
 }

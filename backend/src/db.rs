@@ -77,6 +77,14 @@ pub fn init() -> rusqlite::Result<()> {
            PRIMARY KEY (publication_id, user_id),
            FOREIGN KEY(publication_id) REFERENCES publications(id) ON DELETE CASCADE,
            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+         );
+         CREATE TABLE IF NOT EXISTS competencies (
+           user_id TEXT PRIMARY KEY, skills TEXT NOT NULL DEFAULT '', interests TEXT NOT NULL DEFAULT '',
+           FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+         );
+         CREATE TABLE IF NOT EXISTS course_requirements (
+           course_id TEXT PRIMARY KEY, skills TEXT NOT NULL DEFAULT '',
+           FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
          );",
     )?;
     let has_target: bool = connection.query_row(
@@ -97,6 +105,18 @@ pub fn init() -> rusqlite::Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
+pub fn reset_for_tests() -> rusqlite::Result<()> {
+    init()?;
+    let connection = CONNECTION.lock().unwrap();
+    connection.execute_batch(
+        "DELETE FROM notification_reads; DELETE FROM publications; DELETE FROM resources;
+         DELETE FROM assessment_attempts; DELETE FROM assessment_questions; DELETE FROM assessments;
+         DELETE FROM lecture_progress; DELETE FROM lectures; DELETE FROM enrollments;
+         DELETE FROM courses; DELETE FROM users;",
+    )
+}
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PublicationRecord {
     pub id: i64,
@@ -108,7 +128,10 @@ pub struct PublicationRecord {
     pub read: bool,
 }
 
-pub fn list_publications(kind: Option<&str>, user_id: &str) -> rusqlite::Result<Vec<PublicationRecord>> {
+pub fn list_publications(
+    kind: Option<&str>,
+    user_id: &str,
+) -> rusqlite::Result<Vec<PublicationRecord>> {
     let connection = CONNECTION.lock().unwrap();
     let mut statement = connection.prepare("SELECT p.id,p.kind,p.title,p.body,p.created_at,p.target_user_id,EXISTS(SELECT 1 FROM notification_reads r WHERE r.publication_id=p.id AND r.user_id=?2) FROM publications p WHERE (?1 IS NULL OR p.kind=?1) AND (p.target_user_id IS NULL OR p.target_user_id=?2) ORDER BY p.created_at DESC,p.id DESC")?;
     let rows = statement.query_map(params![kind, user_id], |row| {
@@ -169,6 +192,94 @@ pub fn mark_all_publications_read(user_id: &str) -> rusqlite::Result<usize> {
         "INSERT OR IGNORE INTO notification_reads (publication_id,user_id) SELECT id,?1 FROM publications WHERE target_user_id IS NULL OR target_user_id=?1",
         params![user_id],
     )
+}
+
+pub fn update_competencies(user_id: &str, skills: &str, interests: &str) -> rusqlite::Result<()> {
+    let connection = CONNECTION.lock().unwrap();
+    connection.execute("INSERT INTO competencies (user_id,skills,interests) VALUES (?1,?2,?3) ON CONFLICT(user_id) DO UPDATE SET skills=excluded.skills, interests=excluded.interests", params![user_id, skills, interests])?;
+    Ok(())
+}
+
+pub fn get_competencies(user_id: &str) -> rusqlite::Result<(String, String)> {
+    let connection = CONNECTION.lock().unwrap();
+    connection
+        .query_row(
+            "SELECT skills,interests FROM competencies WHERE user_id=?1",
+            params![user_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map(|value| value.unwrap_or_default())
+}
+
+pub fn update_course_requirements(course_id: &str, skills: &str) -> rusqlite::Result<()> {
+    let connection = CONNECTION.lock().unwrap();
+    connection.execute("INSERT INTO course_requirements (course_id,skills) VALUES (?1,?2) ON CONFLICT(course_id) DO UPDATE SET skills=excluded.skills", params![course_id, skills])?;
+    Ok(())
+}
+
+pub fn get_course_requirements(course_id: &str) -> rusqlite::Result<String> {
+    let connection = CONNECTION.lock().unwrap();
+    connection
+        .query_row(
+            "SELECT skills FROM course_requirements WHERE course_id=?1",
+            params![course_id],
+            |row| row.get(0),
+        )
+        .optional()
+        .map(|value| value.unwrap_or_default())
+}
+
+pub fn course_recommendations(skills: &str) -> rusqlite::Result<Vec<serde_json::Value>> {
+    let connection = CONNECTION.lock().unwrap();
+    let wanted: Vec<String> = skills
+        .split(',')
+        .map(|v| v.trim().to_ascii_lowercase())
+        .filter(|v| !v.is_empty())
+        .collect();
+    let mut statement = connection.prepare("SELECT c.id,c.title,c.created_by,u.name,COALESCE(r.skills,'') FROM courses c JOIN users u ON u.id=c.created_by LEFT JOIN course_requirements r ON r.course_id=c.id ORDER BY c.title")?;
+    let rows = statement.query_map([], |row| {
+        let required: String = row.get(4)?;
+        let score = required.split(',').map(|v| v.trim().to_ascii_lowercase()).filter(|v| wanted.contains(v)).count();
+        Ok(serde_json::json!({"course_id":row.get::<_,String>(0)?,"title":row.get::<_,String>(1)?,"trainer_id":row.get::<_,String>(2)?,"trainer_name":row.get::<_,String>(3)?,"required_skills":required,"match_score":score}))
+    })?;
+    rows.collect()
+}
+
+pub fn update_publication(
+    id: i64,
+    kind: &str,
+    title: &str,
+    body: &str,
+    target: Option<&str>,
+) -> rusqlite::Result<bool> {
+    let connection = CONNECTION.lock().unwrap();
+    Ok(connection.execute(
+        "UPDATE publications SET kind=?2,title=?3,body=?4,target_user_id=?5 WHERE id=?1",
+        params![id, kind, title, body, target],
+    )? > 0)
+}
+
+pub fn delete_publication(id: i64) -> rusqlite::Result<bool> {
+    let connection = CONNECTION.lock().unwrap();
+    Ok(connection.execute("DELETE FROM publications WHERE id=?1", params![id])? > 0)
+}
+
+pub fn list_all_publications() -> rusqlite::Result<Vec<PublicationRecord>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare("SELECT id,kind,title,body,created_at,target_user_id FROM publications ORDER BY created_at DESC,id DESC")?;
+    let rows = statement.query_map([], |row| {
+        Ok(PublicationRecord {
+            id: row.get(0)?,
+            kind: row.get(1)?,
+            title: row.get(2)?,
+            body: row.get(3)?,
+            created_at: row.get(4)?,
+            target_user_id: row.get(5)?,
+            read: false,
+        })
+    })?;
+    rows.collect()
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -291,7 +402,7 @@ pub fn trainee_progress_analytics(user_id: &str) -> rusqlite::Result<Vec<serde_j
             "trainee_id": row.get::<_, String>(0)?, "trainee_name": row.get::<_, String>(1)?,
             "course_id": row.get::<_, String>(2)?, "course_title": row.get::<_, String>(3)?,
             "completed": completed, "total": total,
-            "completion_rate": if total == 0 { 0 } else { (completed * 100 / total) }
+            "completion_rate": if total == 0 { 0 } else { completed * 100 / total }
         }))
     })?;
     rows.collect()

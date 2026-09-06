@@ -450,7 +450,7 @@ async fn update_course(
     Path(id): Path<String>,
     Json(payload): Json<CreateCourseRequest>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+    let _claims = auth::auth_from_headers(&headers).map_err(|_| {
         (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
@@ -504,7 +504,7 @@ async fn delete_course(
     headers: HeaderMap,
     Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
-    let claims = auth::auth_from_headers(&headers).map_err(|_| {
+    let _claims = auth::auth_from_headers(&headers).map_err(|_| {
         (
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({ "message": "Invalid or missing authentication token." })),
