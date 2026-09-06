@@ -59,6 +59,13 @@ pub fn init() -> rusqlite::Result<()> {
            UNIQUE(assessment_id, user_id),
            FOREIGN KEY(assessment_id) REFERENCES assessments(id) ON DELETE CASCADE,
            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+         );
+         CREATE TABLE IF NOT EXISTS resources (
+           id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, kind TEXT NOT NULL,
+           size_bytes INTEGER NOT NULL, course_id TEXT, created_by TEXT NOT NULL,
+           content_base64 TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+           FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE SET NULL,
+           FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE CASCADE
          );",
     )?;
     connection.execute(
@@ -69,6 +76,106 @@ pub fn init() -> rusqlite::Result<()> {
         [],
     )?;
     Ok(())
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ResourceRecord {
+    pub id: i64,
+    pub name: String,
+    pub kind: String,
+    pub size_bytes: i64,
+    pub course_id: Option<String>,
+    pub created_by: String,
+    pub created_at: String,
+}
+
+pub fn list_resources() -> rusqlite::Result<Vec<ResourceRecord>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare("SELECT id,name,kind,size_bytes,course_id,created_by,created_at FROM resources ORDER BY created_at DESC,id DESC")?;
+    let rows = statement.query_map([], |row| {
+        Ok(ResourceRecord {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            kind: row.get(2)?,
+            size_bytes: row.get(3)?,
+            course_id: row.get(4)?,
+            created_by: row.get(5)?,
+            created_at: row.get(6)?,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn insert_resource(
+    name: &str,
+    kind: &str,
+    size_bytes: i64,
+    course_id: Option<&str>,
+    created_by: &str,
+    content_base64: &str,
+) -> rusqlite::Result<i64> {
+    let connection = CONNECTION.lock().unwrap();
+    connection.execute("INSERT INTO resources (name,kind,size_bytes,course_id,created_by,content_base64) VALUES (?1,?2,?3,?4,?5,?6)",
+        params![name, kind, size_bytes, course_id, created_by, content_base64])?;
+    Ok(connection.last_insert_rowid())
+}
+
+pub fn resource_content(id: i64) -> rusqlite::Result<Option<(ResourceRecord, String)>> {
+    let connection = CONNECTION.lock().unwrap();
+    connection.query_row("SELECT id,name,kind,size_bytes,course_id,created_by,created_at,content_base64 FROM resources WHERE id=?1", params![id], |row| Ok((
+        ResourceRecord { id: row.get(0)?, name: row.get(1)?, kind: row.get(2)?, size_bytes: row.get(3)?, course_id: row.get(4)?, created_by: row.get(5)?, created_at: row.get(6)? },
+        row.get(7)?,
+    ))).optional()
+}
+
+pub fn delete_resource(id: i64, user_id: &str) -> rusqlite::Result<bool> {
+    let connection = CONNECTION.lock().unwrap();
+    Ok(connection.execute(
+        "DELETE FROM resources WHERE id=?1 AND created_by=?2",
+        params![id, user_id],
+    )? > 0)
+}
+
+pub fn course_analytics(user_id: &str) -> rusqlite::Result<Vec<serde_json::Value>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare(
+        "SELECT c.id,c.title,COUNT(DISTINCT e.user_id),
+                COUNT(DISTINCT l.id),
+                COUNT(DISTINCT CASE WHEN p.completed=1 THEN p.user_id || ':' || p.lecture_id END)
+         FROM courses c
+         LEFT JOIN enrollments e ON e.course_id=c.id
+         LEFT JOIN lectures l ON l.course_id=c.id
+         LEFT JOIN lecture_progress p ON p.lecture_id=l.id AND p.user_id=e.user_id
+         WHERE c.created_by=?1 GROUP BY c.id,c.title ORDER BY c.title",
+    )?;
+    let rows = statement.query_map(params![user_id], |row| {
+        let enrollments: i64 = row.get(2)?;
+        let lectures: i64 = row.get(3)?;
+        let completed: i64 = row.get(4)?;
+        let possible = enrollments * lectures;
+        Ok(serde_json::json!({
+            "course_id": row.get::<_, String>(0)?, "title": row.get::<_, String>(1)?,
+            "enrollments": enrollments, "lectures": lectures, "completed_lectures": completed,
+            "completion_rate": if possible == 0 { 0.0 } else { (completed as f64 / possible as f64 * 100.0).round() }
+        }))
+    })?;
+    rows.collect()
+}
+
+pub fn assessment_analytics(user_id: &str) -> rusqlite::Result<Vec<serde_json::Value>> {
+    let connection = CONNECTION.lock().unwrap();
+    let mut statement = connection.prepare(
+        "SELECT a.id,a.title,a.subject,COUNT(at.id),COALESCE(AVG(CASE WHEN at.total=0 THEN 0.0 ELSE at.score*100.0/at.total END),0)
+         FROM assessments a LEFT JOIN assessment_attempts at ON at.assessment_id=a.id
+         WHERE a.created_by=?1 GROUP BY a.id,a.title,a.subject ORDER BY a.id DESC")?;
+    let rows = statement.query_map(params![user_id], |row| {
+        Ok(serde_json::json!({
+            "assessment_id": row.get::<_, i64>(0)?, "title": row.get::<_, String>(1)?,
+            "subject": row.get::<_, String>(2)?, "attempts": row.get::<_, i64>(3)?,
+            "average_score": row.get::<_, f64>(4)?.round()
+        }))
+    })?;
+    rows.collect()
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

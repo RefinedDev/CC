@@ -7,9 +7,13 @@
   const escapeText = value => String(value).replace(/[&<>'"]/g, character =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 
-  window.CapacityApi.get('/courses').then(async courses => {
+  Promise.all([window.CapacityApi.get('/courses'), window.CapacityApi.get('/resources')]).then(async ([courses, resources]) => {
     const enrolled = courses.filter(course => Array.isArray(course.enrolled_users) && course.enrolled_users.includes(user.id));
     document.getElementById('traineeCourseCount').textContent = enrolled.length;
+    const resourceList = document.getElementById('traineeResources');
+    resourceList.innerHTML = resources.length ? resources.slice(0, 3).map(resource =>
+      `<div>📎 <span>${escapeText(resource.name)}<small>${escapeText(resource.kind)}</small></span></div>`
+    ).join('') : '<p>No resources uploaded yet. <a href="library.html">Browse the library</a>.</p>';
     if (!enrolled.length) {
       target.innerHTML = '<p>You are not enrolled in any courses yet. <a href="course-catalog.html">Browse courses</a>.</p>';
       return;

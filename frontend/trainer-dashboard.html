@@ -40,26 +40,28 @@
             </div>
             <div class="stats">
                 <div><span>Your Courses</span><b id="trainerCourseCount">—</b><em>Created by you</em></div>
-                <div><span>Assessments Created</span><b>15</b><em>3 active</em></div>
-                <div><span>Avg. Performance</span><b>76%</b><em>+4.2%</em></div>
-                <div><span>Resources Uploaded</span><b>18</b><em>+3 this week</em></div>
+                <div><span>Assessments Created</span><b id="trainerAssessmentCount">—</b><em>Created by you</em></div>
+                <div><span>Avg. Performance</span><b id="trainerAverageScore">—</b><em>Across submitted attempts</em></div>
+                <div><span>Resources Uploaded</span><b id="trainerResourceCount">—</b><em>Available in library</em></div>
             </div>
             <div class="two-col">
                 <section class="panel">
                     <div class="panel-title">
                         <h2>Trainee Performance</h2>
                     </div>
-                    <div class="bar-chart"><i style="height:55%"><span>Web</span></i><i
-                            style="height:78%"><span>Python</span></i><i style="height:66%"><span>DSA</span></i><i
-                            style="height:82%"><span>UI/UX</span></i><i style="height:74%"><span>DBMS</span></i></div>
+                    <div class="bar-chart" id="trainerCourseChart"><p>Loading analytics...</p></div>
                 </section>
                 <section class="panel">
                     <div class="panel-title">
-                        <h2>Recent Assessments</h2>
+                        <h2>Course Participation</h2>
                     </div>
-                    <div class="resource-list" id="trainerCourses"><p>Loading your courses...</p></div>
+                    <div class="resource-list" id="trainerCourses"><p>Loading analytics...</p></div>
                 </section>
             </div>
+            <section class="panel">
+                <h2>Assessment Performance</h2>
+                <div class="resource-list" id="trainerAssessmentAnalytics"><p>Loading analytics...</p></div>
+            </section>
             <section class="panel">
                 <h2>Trainer tools</h2>
                 <p>Create courses and questionnaires, upload learning resources and monitor trainee participation from this
