@@ -168,14 +168,15 @@
   }
 
   function applyTheme() {
-    document.body.classList.toggle(
-      "dark",
-      localStorage.getItem(THEME_KEY) === "dark",
-    );
-    document.querySelectorAll("[data-theme-toggle]").forEach((x) => {
-      x.checked = localStorage.getItem(THEME_KEY) === "dark";
-    });
-  }
+  // Dark mode is the default
+  const theme = localStorage.getItem(THEME_KEY) || "dark";
+
+  document.body.classList.toggle("dark", theme === "dark");
+
+  document.querySelectorAll("[data-theme-toggle]").forEach((x) => {
+    x.checked = theme === "dark";
+  });
+}
   function toggleTheme(dark) {
     localStorage.setItem(THEME_KEY, dark ? "dark" : "light");
     applyTheme();
