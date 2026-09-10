@@ -127,3 +127,29 @@ upload/download permissions.
 ## Project Presentation
 
 [View the Capacity Connect presentation](https://docs.google.com/presentation/d/1kU62G1bVjLuYoxE2v1Ft0-l3SLglBlrB/edit?rtpof=true&sd=true)
+
+## Screenshots
+
+### Course Catalog
+
+![Course catalog](assets/7.jpeg)
+
+### Trainer Dashboard
+
+![Trainer dashboard](assets/2.jpeg)
+
+### Assessment Creation
+
+![Assessment creation](assets/1.jpeg)
+
+### Admin Dashboard
+
+![Admin dashboard](assets/4.jpeg)
+
+### Learning Library
+
+![Learning library](assets/5.jpeg)
+
+### Performance Analytics
+
+![Performance analytics](assets/3.jpeg)
