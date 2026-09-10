@@ -123,3 +123,7 @@ upload/download permissions.
 ## Demo Video
 
 [Watch the Capacity Connect demo](https://drive.google.com/file/d/1b65Zaw9BDv5kYeiACpN6-fvRBEqATKm4/view?usp=sharing)
+
+## Project Presentation
+
+[View the Capacity Connect presentation](https://docs.google.com/presentation/d/1kU62G1bVjLuYoxE2v1Ft0-l3SLglBlrB/edit?rtpof=true&sd=true)
